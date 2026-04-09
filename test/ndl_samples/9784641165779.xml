@@ -1,0 +1,127 @@
+<searchRetrieveResponse xmlns="http://www.loc.gov/zing/srw/">
+  <version>1.2</version>
+  <numberOfRecords>1</numberOfRecords>
+  <extraResponseData>
+    &lt;facets&gt;
+      &lt;lst name="REPOSITORY_NO"&gt;
+        &lt;int name="R100000002"&gt;1&lt;/int&gt;
+      &lt;/lst&gt;
+      &lt;lst name="NDC"&gt;
+        &lt;int name="3"&gt;1&lt;/int&gt;
+      &lt;/lst&gt;
+      &lt;lst name="ISSUED_DATE"&gt;
+        &lt;int name="2021"&gt;1&lt;/int&gt;
+      &lt;/lst&gt;
+      &lt;lst name="LIBRARY"&gt;
+        &lt;int name="さいたま市立中央図書館"&gt;1&lt;/int&gt;
+        &lt;int name="三重県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="京都府立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="佐賀県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="北海道立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="千葉県立中央図書館"&gt;1&lt;/int&gt;
+        &lt;int name="和歌山県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="国立国会図書館"&gt;1&lt;/int&gt;
+        &lt;int name="埼玉県立熊谷図書館"&gt;1&lt;/int&gt;
+        &lt;int name="大分県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="大阪市立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="大阪府立中央図書館"&gt;1&lt;/int&gt;
+        &lt;int name="山口県立山口図書館"&gt;1&lt;/int&gt;
+        &lt;int name="山形県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="山梨県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="岐阜県図書館"&gt;1&lt;/int&gt;
+        &lt;int name="岡山県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="広島県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="愛媛県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="愛知県図書館"&gt;1&lt;/int&gt;
+        &lt;int name="新潟県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="札幌市中央図書館"&gt;1&lt;/int&gt;
+        &lt;int name="東京都立中央図書館"&gt;1&lt;/int&gt;
+        &lt;int name="栃木県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="横浜市立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="滋賀県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="熊本県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="神奈川県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="福井県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="福岡県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="群馬県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="茨城県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="長崎県立長崎図書館"&gt;1&lt;/int&gt;
+        &lt;int name="青森県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="静岡市立中央図書館"&gt;1&lt;/int&gt;
+        &lt;int name="静岡県立中央図書館"&gt;1&lt;/int&gt;
+        &lt;int name="香川県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="高知県立図書館"&gt;1&lt;/int&gt;
+        &lt;int name="鳥取県立図書館"&gt;1&lt;/int&gt;
+      &lt;/lst&gt;
+    &lt;/facets&gt;
+  </extraResponseData>
+  <records>
+    <record>
+      <recordSchema>info:srw/schema/1/dc-v1.1</recordSchema>
+      <recordPacking>string</recordPacking>
+      <recordData>
+      &lt;rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcndl="http://ndl.go.jp/dcndl/terms/" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:owl="http://www.w3.org/2002/07/owl#" &gt;
+          &lt;dcndl:BibAdminResource rdf:about="https://ndlsearch.ndl.go.jp/books/R100000002-I031302811"&gt;
+              &lt;dcndl:catalogingStatus&gt;C7&lt;/dcndl:catalogingStatus&gt;
+              &lt;dcndl:catalogingRule&gt;ncr/2018&lt;/dcndl:catalogingRule&gt;
+              &lt;dcterms:description&gt;type : book&lt;/dcterms:description&gt;
+              &lt;dcndl:bibRecordCategory&gt;R100000002&lt;/dcndl:bibRecordCategory&gt;
+              &lt;dcndl:bibRecordSubCategory&gt;111&lt;/dcndl:bibRecordSubCategory&gt;
+              &lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000002-I031302811#material" /&gt;
+          &lt;/dcndl:BibAdminResource&gt;
+          &lt;dcndl:BibResource rdf:about="https://ndlsearch.ndl.go.jp/books/R100000002-I031302811#material"&gt;
+              &lt;rdfs:seeAlso rdf:resource="http://id.ndl.go.jp/jpno/23508785"/&gt;
+              &lt;rdfs:seeAlso rdf:resource="http://id.ndl.go.jp/bib/031302811"/&gt;
+              &lt;dcterms:identifier rdf:datatype="http://ndl.go.jp/dcndl/terms/JPNO"&gt;23508785&lt;/dcterms:identifier&gt;
+              &lt;dcterms:identifier rdf:datatype="http://ndl.go.jp/dcndl/terms/NDLBibID"&gt;031302811&lt;/dcterms:identifier&gt;
+              &lt;dcterms:identifier rdf:datatype="http://ndl.go.jp/dcndl/terms/TOHANMARCNO"&gt;34180113&lt;/dcterms:identifier&gt;
+              &lt;rdfs:seeAlso rdf:resource="http://iss.ndl.go.jp/isbn/9784641165779"/&gt;
+              &lt;dcterms:identifier rdf:datatype="http://ndl.go.jp/dcndl/terms/ISBN"&gt;978-4-641-16577-9&lt;/dcterms:identifier&gt;
+              &lt;dcterms:title&gt;ゲーム理論 = Game Theory&lt;/dcterms:title&gt;
+              &lt;dc:title&gt;&lt;rdf:Description&gt;
+              &lt;rdf:value&gt;ゲーム理論&lt;/rdf:value&gt;
+              &lt;dcndl:transcription&gt;ゲーム リロン&lt;/dcndl:transcription&gt;
+          &lt;/rdf:Description&gt;&lt;/dc:title&gt;
+                  &lt;dcndl:alternative&gt;&lt;rdf:Description&gt;
+              &lt;rdf:value&gt;Game Theory&lt;/rdf:value&gt;
+          &lt;/rdf:Description&gt;&lt;/dcndl:alternative&gt;
+              &lt;dcndl:edition&gt;第3版&lt;/dcndl:edition&gt;
+                  &lt;dcterms:creator&gt;&lt;foaf:Agent rdf:about="http://id.ndl.go.jp/auth/entity/00539338"&gt;
+              &lt;foaf:name&gt;岡田, 章, 1954-&lt;/foaf:name&gt;
+              &lt;dcndl:transcription&gt;オカダ, アキラ, 1954-&lt;/dcndl:transcription&gt;
+          &lt;/foaf:Agent&gt;&lt;/dcterms:creator&gt;
+              &lt;dc:creator&gt;岡田章 著&lt;/dc:creator&gt;
+              &lt;dcterms:publisher&gt;&lt;foaf:Agent&gt;
+              &lt;foaf:name&gt;有斐閣&lt;/foaf:name&gt;
+              &lt;dcndl:transcription&gt;ユウヒカク&lt;/dcndl:transcription&gt;
+              &lt;dcndl:location&gt;東京&lt;/dcndl:location&gt;
+          &lt;/foaf:Agent&gt;&lt;/dcterms:publisher&gt;
+              &lt;dcndl:publicationPlace rdf:datatype="http://purl.org/dc/terms/ISO3166"&gt;JP&lt;/dcndl:publicationPlace&gt;
+              &lt;dcterms:date&gt;2021.3&lt;/dcterms:date&gt;
+                  &lt;dcterms:issued rdf:datatype="http://purl.org/dc/terms/W3CDTF"&gt;2021&lt;/dcterms:issued&gt;
+              &lt;dcterms:description&gt;表現種別 : テキスト&lt;/dcterms:description&gt;
+              &lt;dcterms:description&gt;機器種別 : 機器不用&lt;/dcterms:description&gt;
+              &lt;dcterms:description&gt;キャリア種別 : 冊子&lt;/dcterms:description&gt;
+              &lt;dcterms:description&gt;文献あり 索引あり&lt;/dcterms:description&gt;
+              &lt;dcterms:subject&gt;&lt;rdf:Description rdf:about="http://id.ndl.go.jp/auth/ndlsh/00574436"&gt;
+              &lt;rdf:value&gt;ゲーム理論&lt;/rdf:value&gt;
+              &lt;dcndl:transcription&gt;ゲームリロン&lt;/dcndl:transcription&gt;
+          &lt;/rdf:Description&gt;&lt;/dcterms:subject&gt;
+              &lt;dcterms:subject rdf:resource="http://id.ndl.go.jp/class/ndlc/DA49"/&gt;
+              &lt;dcterms:subject rdf:resource="http://id.ndl.go.jp/class/ndc10/331.19"/&gt;
+              &lt;dcterms:language rdf:datatype="http://purl.org/dc/terms/ISO639-2"&gt;jpn&lt;/dcterms:language&gt;
+              &lt;dcndl:price&gt;4300円&lt;/dcndl:price&gt;
+              &lt;dcterms:extent&gt;595p ; 22cm&lt;/dcterms:extent&gt;
+              &lt;dcndl:materialType rdf:resource="http://ndl.go.jp/ndltype/Book" rdfs:label="図書"/&gt;
+              &lt;dcterms:audience&gt;一般&lt;/dcterms:audience&gt;
+                  &lt;rdfs:seeAlso rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000002-I031302811"/&gt;
+          &lt;/dcndl:BibResource&gt;
+              &lt;dcndl:BibResource rdf:about="https://ndlsearch.ndl.go.jp/books/R100000002-I031302811#material"&gt;
+                  &lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I01111100001127186#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I01211008001566519#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I02111104235394#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I06111120353940#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I08111003000602453#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I09111102462932#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I10111110861094#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I11121198187799#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I11213087532#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I12111000100879902#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I13111153786133#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I14111106989647#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I14211113860114#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I15111120372474#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I18111000140935#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I19111009952002312#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I21111190561211#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I22111006000544813#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I22211001103753004#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I23111190664951#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I24111113449751#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I25114776469#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I2611B11966192#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I2711B13910383#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I27211000015004903#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I30111120195062#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I31111120393785#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I33111009812476657#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I3411B12706491#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I35111001802710#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I37111130288908#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I38111120060095#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I39111120534980#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I40111111689758#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I41111102352395#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I42111000002926554#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I43111150268579#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000001-I44111110312962#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000002-I031302811#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000136-I1970023484963661350#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000136-I1971993809799799202#item" /&gt;&lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000137-I9784641165779#item" /&gt;
+              &lt;/dcndl:BibResource&gt;
+      &lt;/rdf:RDF&gt;
+    </recordData>
+      <recordPosition>1</recordPosition>
+    </record>
+  </records>
+</searchRetrieveResponse>

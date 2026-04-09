@@ -1,0 +1,78 @@
+<searchRetrieveResponse xmlns="http://www.loc.gov/zing/srw/">
+  <version>1.2</version>
+  <numberOfRecords>1</numberOfRecords>
+  <extraResponseData>
+    &lt;facets&gt;
+      &lt;lst name="REPOSITORY_NO"&gt;
+        &lt;int name="R100000136"&gt;1&lt;/int&gt;
+      &lt;/lst&gt;
+      &lt;lst name="NDC"&gt;
+        &lt;int name="3"&gt;1&lt;/int&gt;
+      &lt;/lst&gt;
+      &lt;lst name="ISSUED_DATE"&gt;
+        &lt;int name="1996"&gt;1&lt;/int&gt;
+      &lt;/lst&gt;
+      &lt;lst name="LIBRARY"&gt;
+      &lt;/lst&gt;
+    &lt;/facets&gt;
+  </extraResponseData>
+  <records>
+    <record>
+      <recordSchema>info:srw/schema/1/dc-v1.1</recordSchema>
+      <recordPacking>string</recordPacking>
+      <recordData>
+      &lt;rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcndl="http://ndl.go.jp/dcndl/terms/" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:owl="http://www.w3.org/2002/07/owl#" &gt;
+          &lt;dcndl:BibAdminResource rdf:about="https://ndlsearch.ndl.go.jp/books/R100000136-I1970304959831561156"&gt;
+              &lt;dcterms:description&gt;type : book&lt;/dcterms:description&gt;
+              &lt;dcndl:bibRecordCategory&gt;R100000136&lt;/dcndl:bibRecordCategory&gt;
+              &lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000136-I1970304959831561156#material" /&gt;
+          &lt;/dcndl:BibAdminResource&gt;
+          &lt;dcndl:BibResource rdf:about="https://ndlsearch.ndl.go.jp/books/R100000136-I1970304959831561156#material"&gt;
+              &lt;rdfs:seeAlso rdf:resource="http://lccn.loc.gov/95006839"/&gt;
+              &lt;dcterms:identifier rdf:datatype="http://ndl.go.jp/dcndl/terms/USMARCNO"&gt;95006839&lt;/dcterms:identifier&gt;
+              &lt;dcterms:identifier rdf:datatype="http://ndl.go.jp/dcndl/terms/NIIBibID"&gt;BA26925861&lt;/dcterms:identifier&gt;
+              &lt;rdfs:seeAlso rdf:resource="http://iss.ndl.go.jp/isbn/0195078241"/&gt;&lt;rdfs:seeAlso rdf:resource="http://iss.ndl.go.jp/isbn/9780195132601"/&gt;
+              &lt;dcterms:identifier rdf:datatype="http://ndl.go.jp/dcndl/terms/ISBN"&gt;0195078241&lt;/dcterms:identifier&gt;&lt;dcterms:identifier rdf:datatype="http://ndl.go.jp/dcndl/terms/ISBN"&gt;9780195132601&lt;/dcterms:identifier&gt;
+              &lt;dcterms:title&gt;The mechanisms of governance : pbk&lt;/dcterms:title&gt;
+              &lt;dc:title&gt;&lt;rdf:Description&gt;
+              &lt;rdf:value&gt;The mechanisms of governance&lt;/rdf:value&gt;
+          &lt;/rdf:Description&gt;&lt;/dc:title&gt;
+              &lt;dcndl:volume&gt;&lt;rdf:Description&gt;
+              &lt;rdf:value&gt;: pbk&lt;/rdf:value&gt;
+          &lt;/rdf:Description&gt;&lt;/dcndl:volume&gt;
+                  &lt;dcterms:creator&gt;&lt;foaf:Agent&gt;
+              &lt;foaf:name&gt;Williamson, Oliver E. (Oliver Eaton)&lt;/foaf:name&gt;
+          &lt;/foaf:Agent&gt;&lt;/dcterms:creator&gt;
+              &lt;dc:creator&gt;Oliver E. Williamson&lt;/dc:creator&gt;
+              &lt;dcterms:publisher&gt;&lt;foaf:Agent&gt;
+              &lt;foaf:name&gt;Oxford University Press&lt;/foaf:name&gt;
+          &lt;/foaf:Agent&gt;&lt;/dcterms:publisher&gt;
+              &lt;dcndl:publicationPlace rdf:datatype="http://purl.org/dc/terms/ISO3166"&gt;us&lt;/dcndl:publicationPlace&gt;
+              &lt;dcterms:date&gt;c1996&lt;/dcterms:date&gt;
+                  &lt;dcterms:issued rdf:datatype="http://purl.org/dc/terms/W3CDTF"&gt;1996&lt;/dcterms:issued&gt;
+              &lt;dcterms:description&gt;Includes bibliographical references (p. 381-410) and index&lt;/dcterms:description&gt;&lt;dcterms:description&gt;Date of another pbk. impression: &amp;quot;First issued as an Oxford University Press paperback, 1999&amp;quot; -- T. p. verso&lt;/dcterms:description&gt;
+              &lt;dcterms:subject&gt;&lt;rdf:Description&gt;
+              &lt;rdf:value&gt;Industrial organization (Economic theory)&lt;/rdf:value&gt;
+          &lt;/rdf:Description&gt;&lt;/dcterms:subject&gt;&lt;dcterms:subject&gt;&lt;rdf:Description&gt;
+              &lt;rdf:value&gt;Corporate governance&lt;/rdf:value&gt;
+          &lt;/rdf:Description&gt;&lt;/dcterms:subject&gt;&lt;dcterms:subject&gt;&lt;rdf:Description&gt;
+              &lt;rdf:value&gt;Transaction costs&lt;/rdf:value&gt;
+          &lt;/rdf:Description&gt;&lt;/dcterms:subject&gt;
+              &lt;dcterms:subject rdf:resource="http://id.ndl.go.jp/class/ndc9/335.1"/&gt;
+              &lt;dc:subject rdf:datatype="http://purl.org/dc/terms/LCC"&gt;HD2326&lt;/dc:subject&gt;
+              &lt;dcterms:language rdf:datatype="http://purl.org/dc/terms/ISO639-2"&gt;en&lt;/dcterms:language&gt;
+              &lt;dcterms:extent&gt;24 cm&lt;/dcterms:extent&gt;
+              &lt;dcndl:materialType rdf:resource="http://ndl.go.jp/ndltype/Book" rdfs:label="図書"/&gt;
+              &lt;dcterms:audience&gt;一般&lt;/dcterms:audience&gt;
+                  &lt;rdfs:seeAlso rdf:resource="https://ci.nii.ac.jp/ncid/BA26925861"/&gt;
+              &lt;dcterms:relation rdf:resource="https://ci.nii.ac.jp/ncid/BA26925861#entity"/&gt;&lt;dcterms:relation rdf:resource="https://lccn.loc.gov/95006839"/&gt;
+          &lt;/dcndl:BibResource&gt;
+              &lt;dcndl:BibResource rdf:about="https://ndlsearch.ndl.go.jp/books/R100000136-I1970304959831561156#material"&gt;
+                  &lt;dcndl:record rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000136-I1970304959831561156#item" /&gt;
+              &lt;/dcndl:BibResource&gt;
+      &lt;/rdf:RDF&gt;
+    </recordData>
+      <recordPosition>1</recordPosition>
+    </record>
+  </records>
+</searchRetrieveResponse>
