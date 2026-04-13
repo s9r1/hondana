@@ -18,21 +18,20 @@ npm install
 
 ### 3. スプレッドシート作成
 
-1. [Google Sheets](https://sheets.google.com/) で新規スプレッドシートを作成
-2. 以下のシートを作成：
-   - **Library** — ISBN登録用（ヘッダ行: id, registeredAt, isbn, title, author, publisher, pubdate, genre, language, shelf, status, borrower, updatedAt, note, thumbnailUrl, source）
-   - **Manual** — 手動登録用（ヘッダ行: Library と同じ）
-   - **Shelves** — 棚マスタ（A列に棚ID: `A-1`, `A-2`, `B-1` など）
-3. スプレッドシートの URL からシートIDをコピー（`https://docs.google.com/spreadsheets/d/`**ここ**`/edit`）
+[Google Sheets](https://sheets.google.com/) で新規スプレッドシートを作成。シート（Library / Manual / Shelves）は初回アクセス時に自動作成されるため、手動作成は不要。
 
 ### 4. GAS プロジェクト作成・デプロイ
 
 ```bash
-npx clasp login                              # 初回のみ
+npx clasp login                                         # 初回のみ
 cd src
-npx clasp create --parentId <シートID> --title "My Library"
+npx clasp create --parentId <スプレッドシートID> --title "My Library"
 npx clasp push
 ```
+
+スプレッドシートIDは URL の `https://docs.google.com/spreadsheets/d/`**ここ**`/edit` の部分。
+
+`clasp create` で生成される `appsscript.json` のタイムゾーンがデフォルト `America/New_York` になるため、必要に応じて `Asia/Tokyo` 等に変更してから `clasp push`。
 
 GAS エディタ → デプロイ → ウェブアプリ → アクセス権限を設定して公開。
 
@@ -53,27 +52,17 @@ var CONFIG = {
 };
 ```
 
-### カラーテーマ
-
-`blue` / `green` / `purple` / `warm` から選択。未指定時は CSS デフォルトの配色。
-
 ### パスワード保護（任意）
 
-GAS エディタ → プロジェクトの設定 → スクリプトプロパティに追加：
-- キー: `APP_PASSWORD`
-- 値: 任意のパスワード
-
-設定するとアクセス時にパスワード入力画面が表示される。未設定なら認証なし。
+スクリプトプロパティに `APP_PASSWORD` を設定するとアクセス時にパスワード入力画面が表示される。未設定なら認証なし。
 
 ## Google Books API キー
 
 1. [Google Cloud Console](https://console.cloud.google.com/) で Books API を有効化
 2. API キーを作成
-3. GAS エディタ → プロジェクトの設定 → スクリプトプロパティに追加:
-   - キー: `GOOGLE_BOOKS_API_KEY`
-   - 値: 取得した API キー
+3. スクリプトプロパティに `GOOGLE_BOOKS_API_KEY` として追加
 
-ローカルテスト時は `test/.env` ファイルに記述：
+ローカルテスト時は `test/.env` に記述：
 
 ```
 GOOGLE_BOOKS_API_KEY=AIza...
@@ -90,7 +79,7 @@ GOOGLE_BOOKS_API_KEY=AIza...
 
 ```bash
 npm test                      # vitest
-node test/fetchLocal.js       # API実地テスト（test/.env に API キーを記述）
+node test/fetchLocal.js       # API実地テスト
 ```
 
 ## ライセンス

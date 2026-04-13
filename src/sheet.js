@@ -31,7 +31,14 @@ var SHEET_SHELVES = 'Shelves';
 function getShelves() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_SHELVES);
-  if (!sheet) return [];
+  if (!sheet) {
+    // 初回: Shelves シートを作成しサンプルデータを書き込む
+    sheet = ss.insertSheet(SHEET_SHELVES);
+    sheet.getRange(1, 1).setValue('棚ID');
+    sheet.setFrozenRows(1);
+    var samples = [['A-1'],['A-2'],['A-3'],['B-1'],['B-2'],['B-3']];
+    sheet.getRange(2, 1, samples.length, 1).setValues(samples);
+  }
 
   var lastRow = sheet.getLastRow();
   if (lastRow <= 1) return [];
@@ -302,7 +309,7 @@ function refreshSelectedRows() {
  */
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('Hondana')
+    .createMenu('蔵書管理')
     .addItem('選択行の情報を再取得', 'refreshSelectedRows')
     .addItem('UUIDを補完', 'backfillUuids')
     .addToUi();
