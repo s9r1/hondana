@@ -16,25 +16,21 @@ GitHub の "Use this template" ボタンで新しいリポジトリを作成。
 npm install
 ```
 
-### 3. GAS プロジェクト作成
+### 3. スプレッドシート作成
+
+1. [Google Sheets](https://sheets.google.com/) で新規スプレッドシートを作成
+2. 以下のシートを作成：
+   - **Library** — ISBN登録用（ヘッダ行: id, registeredAt, isbn, title, author, publisher, pubdate, genre, language, shelf, status, borrower, updatedAt, note, thumbnailUrl, source）
+   - **Manual** — 手動登録用（ヘッダ行: Library と同じ）
+   - **Shelves** — 棚マスタ（A列に棚ID: `A-1`, `A-2`, `B-1` など）
+3. スプレッドシートの URL からシートIDをコピー（`https://docs.google.com/spreadsheets/d/`**ここ**`/edit`）
+
+### 4. GAS プロジェクト作成・デプロイ
 
 ```bash
-npx clasp login          # Google アカウントで認証
-npx clasp create --type webapp --title "My Library"
-```
-
-`.clasp.json` が自動生成される。`.clasp.json.example` を参考に `rootDir: "src"` を追加。
-
-### 4. スプレッドシート準備
-
-GAS プロジェクトにバインドされたスプレッドシートに以下のシートを作成：
-
-- **Library** — 書籍データ（ヘッダ行: id, registeredAt, isbn, title, author, publisher, pubdate, genre, language, shelf, status, borrower, updatedAt, note, thumbnailUrl, source）
-- **Shelves** — 棚マスタ（A列に棚ID: `A-1`, `A-2`, `B-1` など）
-
-### 5. デプロイ
-
-```bash
+npx clasp login                              # 初回のみ
+cd src
+npx clasp create --parentId <シートID> --title "My Library"
 npx clasp push
 ```
 
