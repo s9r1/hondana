@@ -11,13 +11,13 @@
 var COLUMNS = [
   'id', 'registeredAt', 'isbn', 'title', 'author', 'publisher',
   'pubdate', 'genre', 'language', 'shelf', 'status', 'borrower',
-  'updatedAt', 'note', 'thumbnailUrl', 'source'
+  'updatedAt', 'note', 'thumbnailUrl'
 ];
 
 var HEADERS = [
   'ID', '登録日時', 'ISBN', 'タイトル', '著者', '出版社',
   '出版年月', 'ジャンル', '言語', '棚', '貸出状態', '借りている人',
-  '更新日時', '備考', 'サムネイルURL', 'ソース'
+  '更新日時', '備考', 'サムネイルURL'
 ];
 
 var SHEET_LIBRARY = 'Library';
@@ -103,7 +103,7 @@ function addRowToSheet(row, sheetName) {
  * @returns {object} { success, row, debug }
  */
 function registerBookByIsbn(isbn, shelf) {
-  var result = fetchBookInfo(isbn, shelf, 'Library');
+  var result = fetchBookInfo(isbn, shelf);
   if (result.success) {
     addRowToSheet(result.row, SHEET_LIBRARY);
   }
@@ -119,7 +119,7 @@ function registerBookByIsbn(isbn, shelf) {
 function registerBookManual(data) {
   // ISBNがあればAPIで情報を補完する
   if (data.isbn) {
-    var apiResult = fetchBookInfo(data.isbn, data.shelf || '', 'Manual');
+    var apiResult = fetchBookInfo(data.isbn, data.shelf || '');
     if (apiResult.success) {
       // APIで取得したデータにユーザー入力を上書き
       var row = apiResult.row;
@@ -130,7 +130,7 @@ function registerBookManual(data) {
       if (data.genre) row.genre = data.genre;
       if (data.language) row.language = data.language;
       if (data.note) row.note = data.note;
-      row.source = 'Manual';
+
       addRowToSheet(row, SHEET_MANUAL);
       return { success: true, row: row };
     }
@@ -270,13 +270,13 @@ function refreshSelectedRows() {
       continue;
     }
 
-    var result = fetchBookInfo(isbn, '', '');
+    var result = fetchBookInfo(isbn, '');
     if (!result.success) {
       errors.push('行 ' + r + ' (' + isbn + '): 取得失敗');
       continue;
     }
 
-    // 更新対象カラム（id, registeredAt, shelf, status, borrower, updatedAt, note, source は保持）
+    // 更新対象カラム（id, registeredAt, shelf, status, borrower, updatedAt, note は保持）
     var updateCols = ['title', 'author', 'publisher', 'pubdate', 'genre', 'language', 'thumbnailUrl'];
     for (var c = 0; c < updateCols.length; c++) {
       var col = updateCols[c];
@@ -305,14 +305,27 @@ function refreshSelectedRows() {
 // ============================================================
 
 /**
- * スプレッドシートを開いた時にカスタムメニューを追加する
+ * スプレッドシートを開いた時にカスタムメニューを追加し、シートを初期化する
  */
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('蔵書管理')
+    .addItem('シートを初期化', 'ensureAllSheets')
     .addItem('選択行の情報を再取得', 'refreshSelectedRows')
     .addItem('UUIDを補完', 'backfillUuids')
     .addToUi();
+
+  // 初回: シートがなければ自動作成
+  ensureAllSheets();
+}
+
+/**
+ * Library / Manual / Shelves シートが存在しなければ作成する
+ */
+function ensureAllSheets() {
+  ensureSheet_(SHEET_LIBRARY);
+  ensureSheet_(SHEET_MANUAL);
+  getShelves(); // Shelves は getShelves 内で自動作成される
 }
 
 /**

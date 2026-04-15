@@ -389,15 +389,15 @@ body { min-height: 100dvh; }
   }
   function registerByIsbn(isbn, shelf, cb) {
     if (isGAS) gasRun('registerBookByIsbn', isbn, shelf).then(cb, function(e){ cb({success:false}); });
-    else { var r={id:'m-'+Date.now(),registeredAt:new Date().toLocaleString('ja-JP'),isbn:isbn,title:'(mock) '+isbn,author:'',publisher:'',pubdate:'',genre:'',language:'ja',shelf:shelf,status:'在庫',borrower:'',updatedAt:'',note:'',thumbnailUrl:'',source:'Library'}; allBooks.unshift(r); cb({success:true,row:r}); }
+    else { var r={id:'m-'+Date.now(),registeredAt:new Date().toLocaleString('ja-JP'),isbn:isbn,title:'(mock) '+isbn,author:'',publisher:'',pubdate:'',genre:'',language:'ja',shelf:shelf,status:'在庫',borrower:'',updatedAt:'',note:'',thumbnailUrl:''}; allBooks.unshift(r); cb({success:true,row:r}); }
   }
   function fetchIsbnInfo(isbn, shelf, cb) {
-    if (isGAS) gasRun('fetchBookInfo', isbn, shelf, 'Library').then(cb, function(){ cb({success:false}); });
+    if (isGAS) gasRun('fetchBookInfo', isbn, shelf).then(cb, function(){ cb({success:false}); });
     else cb({success:true, row:{isbn:isbn,title:'mock: '+isbn,author:'',publisher:'',pubdate:'',genre:'',language:'ja',shelf:shelf,thumbnailUrl:''}});
   }
   function registerManual(data, cb) {
     if (isGAS) gasRun('registerBookManual', data).then(cb, function(e){ cb({success:false}); });
-    else { var r=Object.assign({id:'m-'+Date.now(),registeredAt:new Date().toLocaleString('ja-JP'),status:'在庫',borrower:'',updatedAt:'',thumbnailUrl:'',source:'Manual'},data); allBooks.unshift(r); cb({success:true,row:r}); }
+    else { var r=Object.assign({id:'m-'+Date.now(),registeredAt:new Date().toLocaleString('ja-JP'),status:'在庫',borrower:'',updatedAt:'',thumbnailUrl:''},data); allBooks.unshift(r); cb({success:true,row:r}); }
   }
 
   // ============================================================
@@ -472,6 +472,7 @@ body { min-height: 100dvh; }
     checkAuth(function() {
       applyLabels();
       loadBooks(function() { applyFilters(); });
+      loadShelves(function(){}); // 棚データを先読み
       bindListEvents();
       bindRegisterEvents();
     });
@@ -554,9 +555,9 @@ body { min-height: 100dvh; }
   function applyFilters() {
     var q = searchQuery.toLowerCase().trim();
     filteredBooks = allBooks.filter(function(b) {
-      if (filterLang === 'ja' && b.language !== 'ja') return false;
+      if (filterLang === 'ja' && b.language !== 'ja' && b.language !== '') return false;
       if (filterLang === 'en' && b.language !== 'en') return false;
-      if (filterLang === 'other' && (b.language === 'ja' || b.language === 'en')) return false;
+      if (filterLang === 'other' && (b.language === 'ja' || b.language === 'en' || b.language === '')) return false;
       if (filterStatus !== 'all' && b.status !== filterStatus) return false;
       if (q) { var h = [b.title,b.author,b.isbn,b.publisher,b.shelf,b.genre].join(' ').toLowerCase(); if (h.indexOf(q)===-1) return false; }
       return true;
@@ -635,16 +636,16 @@ body { min-height: 100dvh; }
     var s=document.getElementById('lending-status').value, b=document.getElementById('lending-borrower').value.trim();
     curBook.status=s; curBook.borrower=s==='貸出中'?b:''; curBook.updatedAt=new Date().toLocaleString('ja-JP');
     if(isGAS)gasRun('updateBookById',curBook.id,{status:s,borrower:curBook.borrower}).then(function(){});
-    closeModal(); applyFilters();
+    closeModal(); renderList();
   }
 
   // ============================================================
   // REGISTER VIEW
   // ============================================================
-  function initRegisterView(){loadShelves(function(){renderShelves();});}
+  function initRegisterView(){if(shelves.length){renderShelves();}else{loadShelves(function(){renderShelves();});}}
 
   function bindRegisterEvents(){
-    document.getElementById('btn-back').addEventListener('click',function(){loadBooks(function(){applyFilters();});showView('list');});
+    document.getElementById('btn-back').addEventListener('click',function(){applyFilters();showView('list');});
     document.getElementById('tab-barcode').addEventListener('click',function(){setMode('barcode');});
     document.getElementById('tab-manual').addEventListener('click',function(){setMode('manual');});
     document.getElementById('btn-scan-start').addEventListener('click', startScan);
@@ -713,8 +714,8 @@ body { min-height: 100dvh; }
         '.hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(0,0,0,.85);position:fixed;top:0;left:0;right:0;z-index:10}' +
         '.hdr h1{font-size:15px;font-weight:600;opacity:.9}' +
         '.cbtn{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px)}' +
-        '#reader{flex:1;margin-top:46px}' +
-        '#reader video{width:100%!important;height:auto!important;object-fit:cover}' +
+        '#reader{flex:1;margin-top:46px;overflow:hidden}' +
+        '#reader video{width:100%!important;height:100%!important;object-fit:contain}' +
         '#msg{position:fixed;bottom:0;left:0;right:0;padding:16px;text-align:center;font-size:16px;font-weight:700;background:rgba(0,0,0,.85);backdrop-filter:blur(8px)}' +
         '#msg.ok{color:#34d399}' +
         '#msg.wait{color:#fbbf24}' +
@@ -724,11 +725,11 @@ body { min-height: 100dvh; }
       '<div id="reader"></div>' +
       '<div id="msg" class="wait">Starting camera...</div>' +
       '<script>' +
-        'var qr=new Html5Qrcode("reader",{formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8]});' +
+        'var qr=new Html5Qrcode("reader",{formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8],experimentalFeatures:{useBarCodeDetectorIfSupported:true}});' +
         'var sent=false;' +
         'qr.start(' +
           '{facingMode:"environment"},' +
-          '{fps:15,qrbox:{width:280,height:120},aspectRatio:1.0},' +
+          '{fps:15,qrbox:function(w,h){var s=Math.min(w,h);return{width:Math.floor(s*0.85),height:Math.floor(s*0.35)};},disableFlip:true},' +
           'function(code){' +
             'if(sent)return;sent=true;' +
             'var m=document.getElementById("msg");m.textContent="✓ "+code;m.className="ok";' +
@@ -737,7 +738,10 @@ body { min-height: 100dvh; }
             'setTimeout(function(){window.close();},800);' +
           '},' +
           'function(){}' +
-        ').then(function(){document.getElementById("msg").textContent="Point at barcode";document.getElementById("msg").className="wait";})' +
+        ').then(function(){' +
+          'document.getElementById("msg").textContent="Point at barcode";document.getElementById("msg").className="wait";' +
+          'try{var cap=qr.getRunningTrackCameraCapabilities();if(cap&&cap.zoomFeature&&cap.zoomFeature().isSupported()){cap.zoomFeature().apply(2.0).catch(function(){});}}catch(e){}' +
+        '})' +
         '.catch(function(e){var m=document.getElementById("msg");m.textContent="Camera error: "+e;m.className="err";});' +
         'function done(){try{qr.stop().catch(function(){});}catch(e){}window.close();}' +
       '<\/script></body></html>';

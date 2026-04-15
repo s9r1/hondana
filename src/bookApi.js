@@ -10,13 +10,11 @@
  *
  * @param {string} isbnInput - ISBN（ハイフン付き、10桁、13桁いずれもOK）
  * @param {string} shelf - 棚ID（例: "A-1"）
- * @param {string} sheetSource - "Library" or "Manual"
  * @returns {object} { success, row, debug }
  */
-function fetchBookInfo(isbnInput, shelf, sheetSource) {
+function fetchBookInfo(isbnInput, shelf) {
   var errors = [];
   shelf = shelf || '';
-  sheetSource = sheetSource || 'Library';
 
   // 1. ISBN検証
   var validation = validateAndNormalizeIsbn(isbnInput);
@@ -47,7 +45,7 @@ function fetchBookInfo(isbnInput, shelf, sheetSource) {
   }
 
   // 5. シート行フォーマットに変換
-  var row = buildSheetRow(isbn13, gb, ndl, shelf, sheetSource);
+  var row = buildSheetRow(isbn13, gb, ndl, shelf);
 
   var source = (gb && ndl) ? 'merged' : (gb ? 'googleBooks' : 'ndlSearch');
   return {
@@ -93,7 +91,7 @@ function cleanAuthorName_(name) {
  *   言語       : GB → NDL フォールバック
  *   書影       : GB のみ
  */
-function buildSheetRow(isbn13, gb, ndl, shelf, sheetSource) {
+function buildSheetRow(isbn13, gb, ndl, shelf) {
   var title = (gb && gb.title) || (ndl && ndl.title) || '';
 
   // 著者: 和書(NDL言語=ja)ならNDL優先（翻訳者除外済み）、洋書ならGB優先
@@ -140,8 +138,7 @@ function buildSheetRow(isbn13, gb, ndl, shelf, sheetSource) {
     borrower: '',
     updatedAt: '',
     note: '',
-    thumbnailUrl: thumbnailUrl,
-    source: sheetSource
+    thumbnailUrl: thumbnailUrl
   };
 }
 
@@ -177,7 +174,6 @@ function buildManualRow(data) {
     borrower: '',
     updatedAt: '',
     note: data.note || '',
-    thumbnailUrl: '',
-    source: 'Manual'
+    thumbnailUrl: ''
   };
 }

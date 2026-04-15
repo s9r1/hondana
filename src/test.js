@@ -25,7 +25,7 @@ var TEST_ISBNS = [
 function testOne() {
   var isbn = '9784641165779';  // ← ここを書き換える
   Logger.log('=== Test One: ' + isbn + ' ===');
-  var result = fetchBookInfo(isbn, 'A-1', 'Library');
+  var result = fetchBookInfo(isbn, 'A-1');
   logResult_(result);
 }
 
@@ -57,7 +57,7 @@ function testAll() {
     var isbn = TEST_ISBNS[i][0];
     var memo = TEST_ISBNS[i][1];
     Logger.log('--- [' + (i + 1) + '/' + TEST_ISBNS.length + '] ' + (memo || isbn) + ' ---');
-    var result = fetchBookInfo(isbn, '', 'Library');
+    var result = fetchBookInfo(isbn, '');
     logResult_(result);
     Logger.log('');
   }
@@ -190,7 +190,6 @@ function logResult_(result) {
   Logger.log('  shelf:         ' + r.shelf);
   Logger.log('  status:        ' + r.status);
   Logger.log('  thumbnailUrl:  ' + (r.thumbnailUrl ? '(exists)' : '(none)'));
-  Logger.log('  source:        ' + r.source);
 }
 
 function logRawBookInfo_(info) {

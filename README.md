@@ -16,22 +16,31 @@ GitHub の "Use this template" ボタンで新しいリポジトリを作成。
 npm install
 ```
 
-### 3. スプレッドシート作成
-
-[Google Sheets](https://sheets.google.com/) で新規スプレッドシートを作成。シート（Library / Manual / Shelves）は初回アクセス時に自動作成されるため、手動作成は不要。
-
-### 4. GAS プロジェクト作成・デプロイ
+### 3. GAS プロジェクト作成
 
 ```bash
-npx clasp login                                         # 初回のみ
+npx clasp login                                    # 初回のみ
 cd src
-npx clasp create --parentId <スプレッドシートID> --title "My Library"
+npx clasp create --type sheets --title "My Library"
+```
+
+スプレッドシートと GAS プロジェクトが同時に作成される。
+
+### 4. タイムゾーン設定
+
+`clasp create` で生成される `appsscript.json` のタイムゾーンがデフォルトで `America/New_York` になるため、GAS エディタ → プロジェクトの設定 → タイムゾーンを `Asia/Tokyo` 等に変更し、ローカルに反映：
+
+```bash
+npx clasp pull
+```
+
+### 5. デプロイ
+
+```bash
 npx clasp push
 ```
 
-スプレッドシートIDは URL の `https://docs.google.com/spreadsheets/d/`**ここ**`/edit` の部分。
-
-`clasp create` で生成される `appsscript.json` のタイムゾーンがデフォルト `America/New_York` になるため、必要に応じて `Asia/Tokyo` 等に変更してから `clasp push`。
+スプレッドシートを開くと Library / Manual / Shelves シートが自動作成される。
 
 GAS エディタ → デプロイ → ウェブアプリ → アクセス権限を設定して公開。
 
