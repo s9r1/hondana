@@ -83,7 +83,7 @@ function cleanAuthorName_(name) {
  * API結果からシート1行分のデータを構築する
  *
  * マージ方針:
- *   タイトル   : GB → NDL フォールバック
+ *   タイトル   : NDL 優先（和書）→ GB フォールバック
  *   著者       : NDL 優先（翻訳者除外済み）→ GB フォールバック
  *   出版社     : NDL 優先 → GB フォールバック
  *   出版年月   : GB → NDL フォールバック
@@ -92,10 +92,15 @@ function cleanAuthorName_(name) {
  *   書影       : GB のみ
  */
 function buildSheetRow(isbn13, gb, ndl, shelf) {
-  var title = (gb && gb.title) || (ndl && ndl.title) || '';
-
-  // 著者: 和書(NDL言語=ja)ならNDL優先（翻訳者除外済み）、洋書ならGB優先
+  // タイトル: 和書(NDL言語=ja)ならNDL優先
+  // GBは和書タイトルをローマ字転写で返したり、subtitle が分離されることがあるため
   var ndlIsJa = ndl && ndl.language === 'ja';
+  var title = '';
+  if (ndlIsJa && ndl.title) {
+    title = ndl.title;
+  } else {
+    title = (gb && gb.title) || (ndl && ndl.title) || '';
+  }
   var author = '';
   if (ndlIsJa && ndl.authors && ndl.authors.length > 0) {
     author = ndl.authors.map(cleanAuthorName_).join(', ');

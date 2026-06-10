@@ -36,18 +36,31 @@ function parseNdlResponse(isbn13, xmlText) {
     // XmlServiceではHTMLエンティティでエスケープされた中身を文字列として取得する
     var records = root.getChild('records', ns_srw);
     if (!records) return null;
-    var record = records.getChild('record', ns_srw);
-    if (!record) return null;
-    var recordData = record.getChild('recordData', ns_srw);
-    if (!recordData) return null;
 
-    // recordDataの中身はエスケープされたXML文字列
-    var rdfText = recordData.getText();
-    if (!rdfText || rdfText.trim() === '') return null;
-
-    // 内側のRDF XMLをパース
-    var rdfDoc = XmlService.parse(rdfText);
-    var rdfRoot = rdfDoc.getRootElement();
+    // 複数レコードから「図書(book)」を優先して選ぶ
+    // 同一ISBNで記事・論文と図書の両方がヒットする場合がある
+    var allRecords = records.getChildren('record', ns_srw);
+    var rdfRoot = null;
+    var rdfRootFallback = null;
+    for (var ri = 0; ri < allRecords.length; ri++) {
+      var recordData = allRecords[ri].getChild('recordData', ns_srw);
+      if (!recordData) continue;
+      var rdfText = recordData.getText();
+      if (!rdfText || rdfText.trim() === '') continue;
+      var rdfDoc = XmlService.parse(rdfText);
+      var candidateRoot = rdfDoc.getRootElement();
+      // type: book かどうかを description から判定
+      var isBook = rdfText.indexOf('type : book') !== -1;
+      if (isBook) {
+        rdfRoot = candidateRoot;
+        break;
+      }
+      if (!rdfRootFallback) {
+        rdfRootFallback = candidateRoot;
+      }
+    }
+    if (!rdfRoot) rdfRoot = rdfRootFallback;
+    if (!rdfRoot) return null;
 
     var ns_dcterms = XmlService.getNamespace('dcterms', 'http://purl.org/dc/terms/');
     var ns_dc = XmlService.getNamespace('dc', 'http://purl.org/dc/elements/1.1/');
@@ -184,7 +197,7 @@ function parseNdlResponse(isbn13, xmlText) {
 function fetchFromNdlSearch(isbn13) {
   var url = 'https://ndlsearch.ndl.go.jp/api/sru?operation=searchRetrieve'
     + '&recordSchema=dcndl'
-    + '&maximumRecords=1'
+    + '&maximumRecords=5'
     + '&onlyBib=true'
     + '&query=isbn=' + isbn13;
 

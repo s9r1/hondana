@@ -71,7 +71,7 @@ var CONFIG = {
 2. API キーを作成
 3. スクリプトプロパティに `GOOGLE_BOOKS_API_KEY` として追加
 
-ローカルテスト時は `test/.env` に記述：
+ローカルで API レスポンスを確認する場合は `dev/.env` に記述：
 
 ```
 GOOGLE_BOOKS_API_KEY=AIza...
@@ -86,10 +86,19 @@ GOOGLE_BOOKS_API_KEY=AIza...
 
 ## テスト
 
+GAS エディタで `src/test.js` の関数を選択して実行。ログビュー（Ctrl+Enter）で結果を確認。
+
+ローカルで API レスポンスを確認したい場合、`dev/isbns.txt` に ISBN を記述して実行:
+
 ```bash
-npm test                      # vitest
-node test/fetchLocal.js       # API実地テスト
+node dev/fetchLocal.js
 ```
+
+取得したレスポンスは `dev/responses/` にキャッシュされ、次回以降はローカルから読み込む。再取得する場合はキャッシュファイルを削除する。
+
+## 補足
+
+- Google Books API の `language` フィールドは単一値のため、日英両方の内容を持つ書籍でも `"en"` のみ返されることがある。
 
 ## ライセンス
 

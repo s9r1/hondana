@@ -1,4 +1,5 @@
 node_modules/
 src/.clasp.json
 src/appsscript.json
-test/.env
+dev/.env
+dev/responses/
