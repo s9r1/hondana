@@ -113,30 +113,13 @@ function registerBookByIsbn(isbn, shelf) {
 /**
  * 手動入力データをシートに登録する
  *
+ * API補完はしない。ISBNヒット時はWebアプリ側が registerBookByIsbn を
+ * 直接呼ぶため、ここに来るのは「API未ヒット or ISBNなし」のケースのみ。
+ *
  * @param {object} data - { isbn?, title, author, publisher, pubdate, genre, language, shelf, note }
  * @returns {object} { success, row }
  */
 function registerBookManual(data) {
-  // ISBNがあればAPIで情報を補完する
-  if (data.isbn) {
-    var apiResult = fetchBookInfo(data.isbn, data.shelf || '');
-    if (apiResult.success) {
-      // APIで取得したデータにユーザー入力を上書き
-      var row = apiResult.row;
-      if (data.title) row.title = data.title;
-      if (data.author) row.author = data.author;
-      if (data.publisher) row.publisher = data.publisher;
-      if (data.pubdate) row.pubdate = data.pubdate;
-      if (data.genre) row.genre = data.genre;
-      if (data.language) row.language = data.language;
-      if (data.note) row.note = data.note;
-
-      addRowToSheet(row, SHEET_MANUAL);
-      return { success: true, row: row };
-    }
-  }
-
-  // APIで取得できなかった or ISBNなし → 完全手動
   var row = buildManualRow(data);
   addRowToSheet(row, SHEET_MANUAL);
   return { success: true, row: row };

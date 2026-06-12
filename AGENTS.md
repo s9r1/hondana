@@ -1,4 +1,4 @@
-# 概要
+## 概要
 
 GAS + Google Sheets の蔵書管理アプリ。ISBN → Google Books / NDL Search → スプレッドシート登録。
 

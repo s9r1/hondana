@@ -315,7 +315,7 @@ body { min-height: 100dvh; }
       statusFilter: '状態', available: '在庫', lent: '貸出中',
       noBooks: '本が見つかりません', noCover: 'No Cover',
       register: '本を登録', shelf: '棚', barcode: 'バーコード', manual: '手動入力',
-      fetchInfo: '情報取得', titleLabel: 'タイトル *', authorLabel: '著者',
+      fetchInfo: '検索して登録', titleLabel: 'タイトル *', authorLabel: '著者',
       publisherLabel: '出版社', pubdateLabel: '出版年月', genreLabel: 'ジャンル',
       languageLabel: '言語', noteLabel: '備考', registerBtn: '登録',
       lending: '貸出管理', status: '状態', borrower: '借りている人', update: '更新',
@@ -326,8 +326,7 @@ body { min-height: 100dvh; }
       errBadIsbn: 'ISBNが正しくありません', errNoHit: '書誌情報が見つかりませんでした',
       startCamera: 'スキャン開始', scanStop: '停止', cameraStarting: 'カメラを起動中…', cameraFail: 'カメラ起動失敗',
       scannerUnavail: 'スキャナーを初期化できません', notIsbn: 'ISBN-13ではないバーコード',
-      fetching: '取得中…', fetched: '情報を補完しました',
-      fetchFail: '取得失敗（手動で入力してください）', regComplete: '登録完了',
+      notFoundManual: '見つかりませんでした。手動で入力して登録してください', regComplete: '登録完了',
       regFail: '登録失敗', isbnOrTitleReq: 'ISBNまたはタイトルは必須です',
       selectShelf: '棚を選択してください', items: '冊',
       pubdatePlaceholder: '例: 2024-03', authorPlaceholder: '著者（カンマ区切り）',
@@ -340,7 +339,7 @@ body { min-height: 100dvh; }
       statusFilter: 'Status', available: 'Available', lent: 'Lent',
       noBooks: 'No books found', noCover: 'No Cover',
       register: 'Add Book', shelf: 'Shelf', barcode: 'Barcode', manual: 'Manual',
-      fetchInfo: 'Lookup', titleLabel: 'Title *', authorLabel: 'Author',
+      fetchInfo: 'Lookup & Register', titleLabel: 'Title *', authorLabel: 'Author',
       publisherLabel: 'Publisher', pubdateLabel: 'Pub. date', genreLabel: 'Genre',
       languageLabel: 'Language', noteLabel: 'Notes', registerBtn: 'Register',
       lending: 'Lending', status: 'Status', borrower: 'Borrower', update: 'Update',
@@ -351,8 +350,7 @@ body { min-height: 100dvh; }
       errBadIsbn: 'Invalid ISBN', errNoHit: 'No book info found',
       startCamera: 'Start Scan', scanStop: 'Stop', cameraStarting: 'Starting camera…', cameraFail: 'Camera failed',
       scannerUnavail: 'Cannot init scanner', notIsbn: 'Not ISBN-13',
-      fetching: 'Looking up…', fetched: 'Info filled',
-      fetchFail: 'Lookup failed (enter manually)', regComplete: 'Registered',
+      notFoundManual: 'Not found. Fill in the form to register manually', regComplete: 'Registered',
       regFail: 'Registration failed', isbnOrTitleReq: 'ISBN or Title required',
       selectShelf: 'Select a shelf', items: 'books',
       pubdatePlaceholder: 'e.g. 2024-03', authorPlaceholder: 'Author(s)',
@@ -393,10 +391,6 @@ body { min-height: 100dvh; }
   function registerByIsbn(isbn, shelf, cb) {
     if (isGAS) gasRun('registerBookByIsbn', isbn, shelf).then(cb, function(e){ cb({success:false, error:(e&&e.message)||''}); });
     else { setTimeout(function(){ var r={id:'m-'+Date.now(),registeredAt:new Date().toLocaleString('ja-JP'),isbn:isbn,title:'(mock) '+isbn,author:'',publisher:'',pubdate:'',genre:'',language:'ja',shelf:shelf,status:'在庫',borrower:'',updatedAt:'',note:'',thumbnailUrl:''}; cb({success:true,row:r}); }, 800); }
-  }
-  function fetchIsbnInfo(isbn, shelf, cb) {
-    if (isGAS) gasRun('fetchBookInfo', isbn, shelf).then(cb, function(){ cb({success:false}); });
-    else cb({success:true, row:{isbn:isbn,title:'mock: '+isbn,author:'',publisher:'',pubdate:'',genre:'',language:'ja',shelf:shelf,thumbnailUrl:''}});
   }
   function registerManual(data, cb) {
     if (isGAS) gasRun('registerBookManual', data).then(cb, function(e){ cb({success:false, error:(e&&e.message)||''}); });
@@ -835,14 +829,24 @@ body { min-height: 100dvh; }
   // Manual
   function resetManualForm(){['man-isbn','man-title','man-author','man-publisher','man-pubdate','man-genre','man-note'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('man-language').value='ja';document.getElementById('man-fetch-status').textContent='';document.getElementById('man-register-status').textContent='';}
 
+  // ISBN検索 → ヒットすればその場で登録（API経由なのでLibraryシート行き）
+  // 未ヒット時のみ手動フォームで登録してもらう
   function fetchIsbnForManual(){
     var isbn=document.getElementById('man-isbn').value.trim();if(!isbn)return;
     var st=document.getElementById('man-fetch-status'),btn=document.getElementById('btn-fetch-isbn');
-    st.textContent=t('fetching');st.className='fetch-status';btn.disabled=true;
-    fetchIsbnInfo(isbn,selectedShelf,function(res){
+    if(!selectedShelf){st.textContent=t('selectShelf');st.className='fetch-status error';return;}
+    st.textContent=t('registering');st.className='fetch-status';btn.disabled=true;
+    registerByIsbn(isbn,selectedShelf,function(res){
       btn.disabled=false;
-      if(res.success&&res.row){var r=res.row;if(r.title)document.getElementById('man-title').value=r.title;if(r.author)document.getElementById('man-author').value=r.author;if(r.publisher)document.getElementById('man-publisher').value=r.publisher;if(r.pubdate)document.getElementById('man-pubdate').value=r.pubdate;if(r.genre)document.getElementById('man-genre').value=r.genre;if(r.language)document.getElementById('man-language').value=r.language;st.textContent=t('fetched');st.className='fetch-status ok';}
-      else{st.textContent=t('fetchFail');st.className='fetch-status error';}
+      if(res.success&&res.row){
+        allBooks.unshift(res.row);
+        resetManualForm();
+        st.textContent=t('regComplete')+': '+(res.row.title||isbn);st.className='fetch-status ok';
+      }else{
+        var msg=regErrorText(res);
+        if(msg===t('errNoHit'))msg=t('notFoundManual');
+        st.textContent=msg;st.className='fetch-status error';
+      }
     });
   }
 
