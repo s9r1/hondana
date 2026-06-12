@@ -128,6 +128,7 @@ body { min-height: 100dvh; }
 .scan-result .sr-status.ok { color: var(--green); }
 .scan-result .sr-status.pending { color: var(--accent); }
 .scan-result .sr-status.error { color: var(--red); }
+.scan-result .sr-retry { margin-left: 8px; padding: 2px 10px; font-size: 12px; }
 .form-row { margin-bottom: 12px; }
 .form-row label { display: block; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 4px; }
 .form-row .req { color: var(--red); }
@@ -321,9 +322,10 @@ body { min-height: 100dvh; }
       isbn: 'ISBN', publisher: '出版社', pubdateDetail: '出版年月', genre: 'ジャンル',
       language: '言語', shelfDetail: '棚', regDate: '登録日時', note: '備考',
       registering: '登録中…', registered: '登録済', failed: '失敗', undo: '取消',
+      queued: '待機中', retry: '再試行',
+      errBadIsbn: 'ISBNが正しくありません', errNoHit: '書誌情報が見つかりませんでした',
       startCamera: 'スキャン開始', scanStop: '停止', cameraStarting: 'カメラを起動中…', cameraFail: 'カメラ起動失敗',
       scannerUnavail: 'スキャナーを初期化できません', notIsbn: 'ISBN-13ではないバーコード',
-      regInProgress: '登録中',
       fetching: '取得中…', fetched: '情報を補完しました',
       fetchFail: '取得失敗（手動で入力してください）', regComplete: '登録完了',
       regFail: '登録失敗', isbnOrTitleReq: 'ISBNまたはタイトルは必須です',
@@ -345,9 +347,10 @@ body { min-height: 100dvh; }
       isbn: 'ISBN', publisher: 'Publisher', pubdateDetail: 'Pub. date', genre: 'Genre',
       language: 'Language', shelfDetail: 'Shelf', regDate: 'Added', note: 'Notes',
       registering: 'Registering…', registered: 'Done', failed: 'Failed', undo: 'Undo',
+      queued: 'Queued', retry: 'Retry',
+      errBadIsbn: 'Invalid ISBN', errNoHit: 'No book info found',
       startCamera: 'Start Scan', scanStop: 'Stop', cameraStarting: 'Starting camera…', cameraFail: 'Camera failed',
       scannerUnavail: 'Cannot init scanner', notIsbn: 'Not ISBN-13',
-      regInProgress: 'Registering',
       fetching: 'Looking up…', fetched: 'Info filled',
       fetchFail: 'Lookup failed (enter manually)', regComplete: 'Registered',
       regFail: 'Registration failed', isbnOrTitleReq: 'ISBN or Title required',
@@ -388,16 +391,25 @@ body { min-height: 100dvh; }
     else { shelves = []; ['A','B','C','D','E','F','G','H','P'].forEach(function(l){ for(var i=1;i<=5;i++) shelves.push(l+'-'+i); }); cb(); }
   }
   function registerByIsbn(isbn, shelf, cb) {
-    if (isGAS) gasRun('registerBookByIsbn', isbn, shelf).then(cb, function(e){ cb({success:false}); });
-    else { var r={id:'m-'+Date.now(),registeredAt:new Date().toLocaleString('ja-JP'),isbn:isbn,title:'(mock) '+isbn,author:'',publisher:'',pubdate:'',genre:'',language:'ja',shelf:shelf,status:'在庫',borrower:'',updatedAt:'',note:'',thumbnailUrl:''}; allBooks.unshift(r); cb({success:true,row:r}); }
+    if (isGAS) gasRun('registerBookByIsbn', isbn, shelf).then(cb, function(e){ cb({success:false, error:(e&&e.message)||''}); });
+    else { setTimeout(function(){ var r={id:'m-'+Date.now(),registeredAt:new Date().toLocaleString('ja-JP'),isbn:isbn,title:'(mock) '+isbn,author:'',publisher:'',pubdate:'',genre:'',language:'ja',shelf:shelf,status:'在庫',borrower:'',updatedAt:'',note:'',thumbnailUrl:''}; cb({success:true,row:r}); }, 800); }
   }
   function fetchIsbnInfo(isbn, shelf, cb) {
     if (isGAS) gasRun('fetchBookInfo', isbn, shelf).then(cb, function(){ cb({success:false}); });
     else cb({success:true, row:{isbn:isbn,title:'mock: '+isbn,author:'',publisher:'',pubdate:'',genre:'',language:'ja',shelf:shelf,thumbnailUrl:''}});
   }
   function registerManual(data, cb) {
-    if (isGAS) gasRun('registerBookManual', data).then(cb, function(e){ cb({success:false}); });
-    else { var r=Object.assign({id:'m-'+Date.now(),registeredAt:new Date().toLocaleString('ja-JP'),status:'在庫',borrower:'',updatedAt:'',thumbnailUrl:''},data); allBooks.unshift(r); cb({success:true,row:r}); }
+    if (isGAS) gasRun('registerBookManual', data).then(cb, function(e){ cb({success:false, error:(e&&e.message)||''}); });
+    else { var r=Object.assign({id:'m-'+Date.now(),registeredAt:new Date().toLocaleString('ja-JP'),status:'在庫',borrower:'',updatedAt:'',thumbnailUrl:''},data); cb({success:true,row:r}); }
+  }
+
+  // サーバーの失敗結果からユーザー向けメッセージを組み立てる
+  function regErrorText(res) {
+    var errs = (res && res.debug && res.debug.errors) || [];
+    var s = (res && res.error) || errs.join('; ');
+    if (/check digit|10 or 13 digits/i.test(s)) return t('errBadIsbn');
+    if (/No results/i.test(s)) return t('errNoHit');
+    return s || t('regFail');
   }
 
   // ============================================================
@@ -673,34 +685,92 @@ body { min-height: 100dvh; }
   }
 
   // Scanner — window.open + document.write (bypasses GAS iframe sandbox)
-  var scanBusy = false;
+  // スキャン結果はキューに積み、1件ずつ順番にサーバーへ送る。
+  // 登録中に次の本をスキャンしても消えない。
+  var scanItems = []; // { isbn, title, author, status: 'queued'|'sending'|'ok'|'error', error } 新しい順
+  var scanProcessing = false;
 
   // Listen for barcode results from scanner popup
   window.addEventListener('message', function(e) {
     if (!e.data || e.data.type !== 'barcode-scanned' || !e.data.value) return;
     var code = e.data.value;
-    var st = document.getElementById('barcode-status');
 
     if (!/^97[89]\d{10}$/.test(code)) {
+      var st = document.getElementById('barcode-status');
       st.textContent = t('notIsbn') + ': ' + code; st.className = 'scan-status error';
       return;
     }
-    if (scanBusy) return;
-    scanBusy = true;
-    st.textContent = t('regInProgress') + ': ' + code; st.className = 'scan-status';
-    showScanResult({ isbn: code, title: '…', author: '', status: 'pending' });
-
-    registerByIsbn(code, selectedShelf, function(res) {
-      if (res.success && res.row) {
-        showScanResult({ isbn: code, title: res.row.title || code, author: res.row.author || '', status: 'ok' });
-        st.textContent = t('registered'); st.className = 'scan-status ok';
-      } else {
-        showScanResult({ isbn: code, title: code, author: '', status: 'error' });
-        st.textContent = t('failed'); st.className = 'scan-status error';
-      }
-      scanBusy = false;
-    });
+    scanItems.unshift({ isbn: code, title: '', author: '', status: 'queued', error: '' });
+    renderScanItems();
+    processScanQueue();
   });
+
+  function processScanQueue() {
+    if (scanProcessing) return;
+    // 配列は新しい順なので、末尾側から古い queued を探す
+    var item = null;
+    for (var i = scanItems.length - 1; i >= 0; i--) {
+      if (scanItems[i].status === 'queued') { item = scanItems[i]; break; }
+    }
+    if (!item) return;
+    scanProcessing = true;
+    item.status = 'sending';
+    renderScanItems();
+    registerByIsbn(item.isbn, selectedShelf, function(res) {
+      if (res && res.success && res.row) {
+        item.title = res.row.title || '';
+        item.author = res.row.author || '';
+        item.status = 'ok';
+        allBooks.unshift(res.row); // 一覧へ即反映
+      } else {
+        item.status = 'error';
+        item.error = regErrorText(res);
+      }
+      scanProcessing = false;
+      renderScanItems();
+      processScanQueue();
+    });
+  }
+
+  function renderScanItems() {
+    var el = document.getElementById('scan-result');
+    el.innerHTML = scanItems.map(function(it, idx) {
+      var label, cls;
+      if (it.status === 'ok') { label = t('registered'); cls = 'ok'; }
+      else if (it.status === 'error') { label = t('failed') + (it.error ? ': ' + it.error : ''); cls = 'error'; }
+      else if (it.status === 'sending') { label = t('registering'); cls = 'pending'; }
+      else { label = t('queued'); cls = 'pending'; }
+      return '<div class="scan-result">'
+        + '<div class="sr-title">' + esc(it.title || it.isbn) + '</div>'
+        + '<div class="sr-meta">' + (it.author ? esc(it.author) + ' / ' : '') + it.isbn + '</div>'
+        + '<div class="sr-status ' + cls + '">' + esc(label)
+        + (it.status === 'error' ? ' <button class="btn-small sr-retry" data-idx="' + idx + '">' + t('retry') + '</button>' : '')
+        + '</div></div>';
+    }).join('');
+    el.querySelectorAll('.sr-retry').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var it = scanItems[parseInt(this.dataset.idx)];
+        if (it && it.status === 'error') { it.status = 'queued'; renderScanItems(); processScanQueue(); }
+      });
+    });
+    updateScanSummary();
+  }
+
+  function updateScanSummary() {
+    var st = document.getElementById('barcode-status');
+    if (!scanItems.length) { st.textContent = ''; st.className = 'scan-status'; return; }
+    var ok = 0, pend = 0, err = 0;
+    scanItems.forEach(function(it) {
+      if (it.status === 'ok') ok++;
+      else if (it.status === 'error') err++;
+      else pend++;
+    });
+    var parts = [t('registered') + ' ' + ok];
+    if (pend) parts.push(t('registering') + ' ' + pend);
+    if (err) parts.push(t('failed') + ' ' + err);
+    st.textContent = parts.join(' / ');
+    st.className = 'scan-status' + (err ? ' error' : (ok && !pend ? ' ok' : ''));
+  }
 
   function buildScannerHTML() {
     return '<!DOCTYPE html><html><head>' +
@@ -749,8 +819,7 @@ body { min-height: 100dvh; }
 
   function startScan() {
     var st = document.getElementById('barcode-status');
-    st.textContent = ''; st.className = 'scan-status';
-    document.getElementById('scan-result').innerHTML = '';
+    if (!scanItems.length) { st.textContent = ''; st.className = 'scan-status'; }
 
     var html = buildScannerHTML();
     var win = window.open('', '_blank');
@@ -761,18 +830,6 @@ body { min-height: 100dvh; }
       st.textContent = t('cameraFail') + ': ポップアップがブロックされました。サイトのポップアップを許可してください。';
       st.className = 'scan-status error';
     }
-  }
-
-  function stopScan() { /* no-op: scanner runs in separate window */ }
-
-  function showScanResult(data) {
-    var el = document.getElementById('scan-result');
-    var statusLabel = data.status === 'ok' ? t('registered') : data.status === 'pending' ? t('registering') : t('failed');
-    el.innerHTML = '<div class="scan-result">'
-      + '<div class="sr-title">' + esc(data.title) + '</div>'
-      + '<div class="sr-meta">' + esc(data.author) + (data.isbn ? ' / ' + data.isbn : '') + '</div>'
-      + '<div class="sr-status ' + data.status + '">' + statusLabel + '</div>'
-      + '</div>';
   }
 
   // Manual
@@ -798,8 +855,8 @@ body { min-height: 100dvh; }
     btn.disabled=true;btn.textContent=t('registering');
     registerManual(data,function(res){
       btn.disabled=false;btn.textContent=t('registerBtn');
-      if(res.success){var msg=t('regComplete')+': '+(data.title||data.isbn);resetManualForm();st.textContent=msg;st.className='fetch-status ok';}
-      else{st.textContent=t('regFail');st.className='fetch-status error';}
+      if(res.success&&res.row){allBooks.unshift(res.row);var msg=t('regComplete')+': '+(data.title||data.isbn);resetManualForm();st.textContent=msg;st.className='fetch-status ok';}
+      else{st.textContent=regErrorText(res);st.className='fetch-status error';}
     });
   }
 
