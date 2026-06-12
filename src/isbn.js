@@ -21,11 +21,11 @@ function normalizeIsbn(input) {
  */
 function isValidIsbn10(isbn) {
   if (!/^\d{9}[\dXx]$/.test(isbn)) return false;
-  var sum = 0;
-  for (var i = 0; i < 9; i++) {
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
     sum += parseInt(isbn[i], 10) * (10 - i);
   }
-  var last = isbn[9].toUpperCase();
+  const last = isbn[9].toUpperCase();
   sum += last === 'X' ? 10 : parseInt(last, 10);
   return sum % 11 === 0;
 }
@@ -37,11 +37,11 @@ function isValidIsbn10(isbn) {
  */
 function isValidIsbn13(isbn) {
   if (!/^\d{13}$/.test(isbn)) return false;
-  var sum = 0;
-  for (var i = 0; i < 12; i++) {
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
     sum += parseInt(isbn[i], 10) * (i % 2 === 0 ? 1 : 3);
   }
-  var check = (10 - (sum % 10)) % 10;
+  const check = (10 - (sum % 10)) % 10;
   return check === parseInt(isbn[12], 10);
 }
 
@@ -51,12 +51,12 @@ function isValidIsbn13(isbn) {
  * @returns {string} ISBN-13
  */
 function isbn10to13(isbn10) {
-  var body = '978' + isbn10.substring(0, 9);
-  var sum = 0;
-  for (var i = 0; i < 12; i++) {
+  const body = `978${isbn10.substring(0, 9)}`;
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
     sum += parseInt(body[i], 10) * (i % 2 === 0 ? 1 : 3);
   }
-  var check = (10 - (sum % 10)) % 10;
+  const check = (10 - (sum % 10)) % 10;
   return body + check.toString();
 }
 
@@ -66,7 +66,7 @@ function isbn10to13(isbn10) {
  * @returns {{ valid: boolean, isbn13: string|null, original: string, error: string|null }}
  */
 function validateAndNormalizeIsbn(input) {
-  var raw = normalizeIsbn(input);
+  const raw = normalizeIsbn(input);
   if (raw.length === 13) {
     if (isValidIsbn13(raw)) {
       return { valid: true, isbn13: raw, original: input, error: null };
@@ -79,7 +79,7 @@ function validateAndNormalizeIsbn(input) {
     }
     return { valid: false, isbn13: null, original: input, error: 'Invalid ISBN-10 check digit' };
   }
-  return { valid: false, isbn13: null, original: input, error: 'ISBN must be 10 or 13 digits, got ' + raw.length };
+  return { valid: false, isbn13: null, original: input, error: `ISBN must be 10 or 13 digits, got ${raw.length}` };
 }
 
 // Node.js環境用エクスポート（GASでは無視される）

@@ -13,30 +13,30 @@
  * @returns {object} { success, row, debug }
  */
 function fetchBookInfo(isbnInput, shelf) {
-  var errors = [];
+  const errors = [];
   shelf = shelf || '';
 
   // 1. ISBN検証
-  var validation = validateAndNormalizeIsbn(isbnInput);
+  const validation = validateAndNormalizeIsbn(isbnInput);
   if (!validation.valid) {
     return { success: false, row: null, debug: { errors: [validation.error] } };
   }
-  var isbn13 = validation.isbn13;
+  const isbn13 = validation.isbn13;
 
   // 2. Google Books API
-  var gb = null;
+  let gb = null;
   try {
     gb = fetchFromGoogleBooks(isbn13);
   } catch (e) {
-    errors.push('Google Books: ' + e.message);
+    errors.push(`Google Books: ${e.message}`);
   }
 
   // 3. NDL Search（和書の出版社・ジャンル補完用。洋書はヒットしないので自然にスキップ）
-  var ndl = null;
+  let ndl = null;
   try {
     ndl = fetchFromNdlSearch(isbn13);
   } catch (e) {
-    errors.push('NDL Search: ' + e.message);
+    errors.push(`NDL Search: ${e.message}`);
   }
 
   // 4. どちらもなければ失敗
@@ -45,9 +45,9 @@ function fetchBookInfo(isbnInput, shelf) {
   }
 
   // 5. シート行フォーマットに変換
-  var row = buildSheetRow(isbn13, gb, ndl, shelf);
+  const row = buildSheetRow(isbn13, gb, ndl, shelf);
 
-  var source = (gb && ndl) ? 'merged' : (gb ? 'googleBooks' : 'ndlSearch');
+  const source = (gb && ndl) ? 'merged' : (gb ? 'googleBooks' : 'ndlSearch');
   return {
     success: true,
     row: row,
@@ -63,16 +63,16 @@ function fetchBookInfo(isbnInput, shelf) {
  */
 function cleanAuthorName_(name) {
   if (!name) return '';
-  var s = name.trim();
+  let s = name.trim();
   // 末尾 '=' 除去
   s = s.replace(/[=＝]+$/, '');
   // 生没年パターン除去: ", 1962-" / ", 1900-1999" / ", 1962-2020"
   s = s.replace(/,\s*\d{4}-\d{0,4}\s*$/, '');
   // NDL "姓, 名" → "姓 名"（カンマ区切りが1つだけの場合）
-  var parts = s.split(',').map(function(p) { return p.trim(); }).filter(Boolean);
+  const parts = s.split(',').map((p) => p.trim()).filter(Boolean);
   if (parts.length === 2 && !/\s/.test(parts[0]) && !/\s/.test(parts[1])) {
     // 両パーツが単語1つずつ = 日本語の "姓, 名" パターン
-    s = parts[0] + ' ' + parts[1];
+    s = `${parts[0]} ${parts[1]}`;
   } else {
     s = parts.join(', ');
   }
@@ -86,12 +86,12 @@ function cleanAuthorName_(name) {
  */
 function normalizePubdate_(s) {
   if (!s) return '';
-  var m = String(s).match(/(\d{4})(?:\D+(\d{1,2}))?(?:\D+(\d{1,2}))?/);
+  const m = String(s).match(/(\d{4})(?:\D+(\d{1,2}))?(?:\D+(\d{1,2}))?/);
   if (!m) return String(s);
-  var out = m[1];
+  let out = m[1];
   if (m[2]) {
-    out += '-' + ('0' + m[2]).slice(-2);
-    if (m[3]) out += '-' + ('0' + m[3]).slice(-2);
+    out += '-' + `0${m[2]}`.slice(-2);
+    if (m[3]) out += '-' + `0${m[3]}`.slice(-2);
   }
   return out;
 }
@@ -111,14 +111,14 @@ function normalizePubdate_(s) {
 function buildSheetRow(isbn13, gb, ndl, shelf) {
   // タイトル: 和書(NDL言語=ja)ならNDL優先
   // GBは和書タイトルをローマ字転写で返したり、subtitle が分離されることがあるため
-  var ndlIsJa = ndl && ndl.language === 'ja';
-  var title = '';
+  const ndlIsJa = ndl && ndl.language === 'ja';
+  let title = '';
   if (ndlIsJa && ndl.title) {
     title = ndl.title;
   } else {
     title = (gb && gb.title) || (ndl && ndl.title) || '';
   }
-  var author = '';
+  let author = '';
   if (ndlIsJa && ndl.authors && ndl.authors.length > 0) {
     author = ndl.authors.map(cleanAuthorName_).join(', ');
   } else if (gb && gb.authors && gb.authors.length > 0) {
@@ -129,21 +129,21 @@ function buildSheetRow(isbn13, gb, ndl, shelf) {
   }
 
   // 出版年月: GB → NDL
-  var pubdate = normalizePubdate_((gb && gb.publishedDate) || (ndl && ndl.publishedDate) || '');
+  const pubdate = normalizePubdate_((gb && gb.publishedDate) || (ndl && ndl.publishedDate) || '');
 
   // 出版社: NDL 優先 → GB
-  var publisher = (ndl && ndl.publisher) || (gb && gb.publisher) || '';
+  const publisher = (ndl && ndl.publisher) || (gb && gb.publisher) || '';
 
   // ジャンル: NDL のみ（GB categories は使わない）
-  var genre = '';
+  let genre = '';
   if (ndl && ndl.categories && ndl.categories.length > 0) {
     genre = ndl.categories.join(', ');
   }
 
-  var language = (gb && gb.language) || (ndl && ndl.language) || '';
-  var thumbnailUrl = (gb && gb.thumbnail) || '';
+  const language = (gb && gb.language) || (ndl && ndl.language) || '';
+  const thumbnailUrl = (gb && gb.thumbnail) || '';
 
-  var now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+  const now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
 
   return {
     id: Utilities.getUuid(),
@@ -172,12 +172,12 @@ function buildSheetRow(isbn13, gb, ndl, shelf) {
  * @returns {object} シート行データ
  */
 function buildManualRow(data) {
-  var now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+  const now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
 
   // ISBNがあれば正規化
-  var isbn = '';
+  let isbn = '';
   if (data.isbn) {
-    var validation = validateAndNormalizeIsbn(data.isbn);
+    const validation = validateAndNormalizeIsbn(data.isbn);
     isbn = validation.valid ? validation.isbn13 : data.isbn;
   }
 

@@ -16,7 +16,7 @@ function parseGoogleBooksResponse(isbn13, json) {
     return null;
   }
 
-  var vol = json.items[0].volumeInfo || {};
+  const vol = json.items[0].volumeInfo || {};
 
   return {
     isbn: isbn13,
@@ -39,31 +39,30 @@ function parseGoogleBooksResponse(isbn13, json) {
  * @returns {object|null} BookInfo or null
  */
 function fetchFromGoogleBooks(isbn13) {
-  var url = 'https://www.googleapis.com/books/v1/volumes?q=isbn:' + isbn13 + '&country=JP';
+  let url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn13}&country=JP`;
 
   // APIキーがあれば付与
   try {
-    var apiKey = PropertiesService.getScriptProperties().getProperty('GOOGLE_BOOKS_API_KEY');
+    const apiKey = PropertiesService.getScriptProperties().getProperty('GOOGLE_BOOKS_API_KEY');
     if (apiKey) {
-      url += '&key=' + apiKey;
+      url += `&key=${apiKey}`;
     }
   } catch (e) {
     // PropertiesService が使えない環境（テスト等）では無視
   }
 
   try {
-    var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-    var code = response.getResponseCode();
-    var body = response.getContentText();
+    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    const code = response.getResponseCode();
+    const body = response.getContentText();
     if (code !== 200) {
-      Logger.log('Google Books API error: HTTP ' + code);
-      Logger.log('Response body: ' + body.substring(0, 500));
+      Logger.log(`Google Books API error: HTTP ${code}`);
+      Logger.log(`Response body: ${body.substring(0, 500)}`);
       return null;
     }
-    var json = JSON.parse(body);
-    return parseGoogleBooksResponse(isbn13, json);
+    return parseGoogleBooksResponse(isbn13, JSON.parse(body));
   } catch (e) {
-    Logger.log('Google Books API fetch error: ' + e.message);
+    Logger.log(`Google Books API fetch error: ${e.message}`);
     return null;
   }
 }
@@ -73,23 +72,23 @@ function fetchFromGoogleBooks(isbn13) {
  * GASエディタで直接実行して使う
  */
 function debugGoogleBooksRawResponse() {
-  var isbn = '9784641165779';
-  var url = 'https://www.googleapis.com/books/v1/volumes?q=isbn:' + isbn + '&country=JP';
-  
+  const isbn = '9784641165779';
+  let url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&country=JP`;
+
   // APIキーの確認
-  var apiKey = PropertiesService.getScriptProperties().getProperty('GOOGLE_BOOKS_API_KEY');
-  Logger.log('API Key loaded: ' + (apiKey ? 'YES (' + apiKey.substring(0, 6) + '...)' : 'NO'));
-  
+  const apiKey = PropertiesService.getScriptProperties().getProperty('GOOGLE_BOOKS_API_KEY');
+  Logger.log('API Key loaded: ' + (apiKey ? `YES (${apiKey.substring(0, 6)}...)` : 'NO'));
+
   if (apiKey) {
-    url += '&key=' + apiKey;
+    url += `&key=${apiKey}`;
   }
-  
+
   // キーをマスクしてURL表示
   Logger.log('URL: ' + url.replace(/key=([^&]+)/, 'key=***'));
-  
-  var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  Logger.log('HTTP Status: ' + response.getResponseCode());
-  Logger.log('Body: ' + response.getContentText().substring(0, 2000));
+
+  const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  Logger.log(`HTTP Status: ${response.getResponseCode()}`);
+  Logger.log(`Body: ${response.getContentText().substring(0, 2000)}`);
 }
 
 // Node.js環境用エクスポート（GASでは無視される）

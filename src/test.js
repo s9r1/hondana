@@ -7,7 +7,7 @@
 // ============================================================
 // ★ テスト用ISBNリスト — ここに自由に追加してください
 // ============================================================
-var TEST_ISBNS = [
+const TEST_ISBNS = [
   // [ISBN, メモ]
   // ↓↓↓ ここに追加 ↓↓↓
   ['9780195132601', 'The Mechanisms of Governance / Williamson (en)'],
@@ -23,18 +23,17 @@ var TEST_ISBNS = [
  * 1冊分の統合テスト（API取得のみ、シートには書き込まない）
  */
 function testOne() {
-  var isbn = '9784641165779';  // ← ここを書き換える
-  Logger.log('=== Test One: ' + isbn + ' ===');
-  var result = fetchBookInfo(isbn, 'A-1');
-  logResult_(result);
+  const isbn = '9784641165779';  // ← ここを書き換える
+  Logger.log(`=== Test One: ${isbn} ===`);
+  logResult_(fetchBookInfo(isbn, 'A-1'));
 }
 
 /**
  * 1冊分 Google Books のみ（rawデータ確認用）
  */
 function testOneGoogleBooks() {
-  var isbn = '9784641165779';  // ← ここを書き換える
-  Logger.log('=== Google Books: ' + isbn + ' ===');
+  const isbn = '9784641165779';  // ← ここを書き換える
+  Logger.log(`=== Google Books: ${isbn} ===`);
   logRawBookInfo_(fetchFromGoogleBooks(isbn));
 }
 
@@ -42,8 +41,8 @@ function testOneGoogleBooks() {
  * 1冊分 NDL Search のみ（rawデータ確認用）
  */
 function testOneNdlSearch() {
-  var isbn = '9784641165779';  // ← ここを書き換える
-  Logger.log('=== NDL Search: ' + isbn + ' ===');
+  const isbn = '9784641165779';  // ← ここを書き換える
+  Logger.log(`=== NDL Search: ${isbn} ===`);
   logRawBookInfo_(fetchFromNdlSearch(isbn));
 }
 
@@ -52,13 +51,11 @@ function testOneNdlSearch() {
 // ============================================================
 
 function testAll() {
-  Logger.log('=== Batch Test: ' + TEST_ISBNS.length + ' books ===\n');
-  for (var i = 0; i < TEST_ISBNS.length; i++) {
-    var isbn = TEST_ISBNS[i][0];
-    var memo = TEST_ISBNS[i][1];
-    Logger.log('--- [' + (i + 1) + '/' + TEST_ISBNS.length + '] ' + (memo || isbn) + ' ---');
-    var result = fetchBookInfo(isbn, '');
-    logResult_(result);
+  Logger.log(`=== Batch Test: ${TEST_ISBNS.length} books ===\n`);
+  for (let i = 0; i < TEST_ISBNS.length; i++) {
+    const [isbn, memo] = TEST_ISBNS[i];
+    Logger.log(`--- [${i + 1}/${TEST_ISBNS.length}] ${memo || isbn} ---`);
+    logResult_(fetchBookInfo(isbn, ''));
     Logger.log('');
   }
 }
@@ -71,11 +68,10 @@ function testAll() {
  * 1冊をLibraryシートに登録する
  */
 function testRegisterOne() {
-  var isbn = '9784641165779';  // ← ここを書き換える
-  var shelf = 'A-1';           // ← 棚を指定
-  Logger.log('=== Register: ' + isbn + ' to Library ===');
-  var result = registerBookByIsbn(isbn, shelf, makeTestToken_());
-  logResult_(result);
+  const isbn = '9784641165779';  // ← ここを書き換える
+  const shelf = 'A-1';           // ← 棚を指定
+  Logger.log(`=== Register: ${isbn} to Library ===`);
+  logResult_(registerBookByIsbn(isbn, shelf, makeTestToken_()));
 }
 
 /**
@@ -83,7 +79,7 @@ function testRegisterOne() {
  */
 function testRegisterManual() {
   Logger.log('=== Manual Register ===');
-  var result = registerBookManual({
+  const result = registerBookManual({
     isbn: '',  // ISBNなしの本
     title: 'テスト手動登録の本',
     author: 'テスト著者',
@@ -102,11 +98,11 @@ function testRegisterManual() {
  */
 function testGetAllBooks() {
   Logger.log('=== Get All Books ===');
-  var books = getAllBooks(makeTestToken_());
-  Logger.log('Total: ' + books.length + ' books');
-  for (var i = 0; i < books.length; i++) {
-    Logger.log('[' + (i + 1) + '] ' + books[i].title + ' (' + books[i].isbn + ') shelf=' + books[i].shelf);
-  }
+  const books = getAllBooks(makeTestToken_());
+  Logger.log(`Total: ${books.length} books`);
+  books.forEach((b, i) => {
+    Logger.log(`[${i + 1}] ${b.title} (${b.isbn}) shelf=${b.shelf}`);
+  });
 }
 
 /**
@@ -114,19 +110,18 @@ function testGetAllBooks() {
  */
 function testGetShelves() {
   Logger.log('=== Get Shelves ===');
-  var sh = getShelves(makeTestToken_());
-  Logger.log('Shelves (' + sh.length + '): ' + sh.join(', '));
+  const sh = getShelves(makeTestToken_());
+  Logger.log(`Shelves (${sh.length}): ${sh.join(', ')}`);
 }
 
 /**
  * ISBNで即時登録テスト（Libraryシートに書き込む）
  */
 function testRegisterByIsbn() {
-  var isbn = '9784641165779';  // ← ここを書き換える
-  var shelf = 'A-1';
-  Logger.log('=== Register by ISBN: ' + isbn + ' to ' + shelf + ' ===');
-  var result = registerBookByIsbn(isbn, shelf, makeTestToken_());
-  logResult_(result);
+  const isbn = '9784641165779';  // ← ここを書き換える
+  const shelf = 'A-1';
+  Logger.log(`=== Register by ISBN: ${isbn} to ${shelf} ===`);
+  logResult_(registerBookByIsbn(isbn, shelf, makeTestToken_()));
 }
 
 // ============================================================
@@ -138,8 +133,8 @@ function testRegisterByIsbn() {
  * （APP_PASSWORD 未設定時は何でも通るので形式だけ）
  */
 function makeTestToken_() {
-  var token = Utilities.getUuid();
-  CacheService.getScriptCache().put('tok:' + token, '1', 300);
+  const token = Utilities.getUuid();
+  CacheService.getScriptCache().put(`tok:${token}`, '1', 300);
   return token;
 }
 
@@ -148,15 +143,15 @@ function makeTestToken_() {
  */
 function testRequireAuth() {
   Logger.log('=== requireAuth_ Test ===');
-  var pwSet = isPasswordRequired();
-  Logger.log('APP_PASSWORD set: ' + pwSet);
+  const pwSet = isPasswordRequired();
+  Logger.log(`APP_PASSWORD set: ${pwSet}`);
 
   // 有効トークン → 通る
   try {
     requireAuth_(makeTestToken_());
     Logger.log('✓ valid token accepted');
   } catch (e) {
-    Logger.log('✗ valid token rejected: ' + e.message);
+    Logger.log(`✗ valid token rejected: ${e.message}`);
   }
 
   // 不正トークン → APP_PASSWORD 設定時のみ throw
@@ -164,7 +159,7 @@ function testRequireAuth() {
     requireAuth_('bogus-token');
     Logger.log(pwSet ? '✗ bogus token accepted (should throw)' : '✓ no password → pass-through');
   } catch (e) {
-    Logger.log(pwSet ? '✓ bogus token rejected: ' + e.message : '✗ threw despite no password: ' + e.message);
+    Logger.log(pwSet ? `✓ bogus token rejected: ${e.message}` : `✗ threw despite no password: ${e.message}`);
   }
 }
 
@@ -173,7 +168,7 @@ function testRequireAuth() {
 // ============================================================
 
 function testNormalizePubdate() {
-  var cases = [
+  const cases = [
     ['2024-03-15', '2024-03-15'],
     ['2024-03', '2024-03'],
     ['2024.3', '2024-03'],
@@ -185,18 +180,18 @@ function testNormalizePubdate() {
     ['unknown', 'unknown'],
   ];
   Logger.log('=== normalizePubdate_ Test ===');
-  var passed = 0, failed = 0;
-  for (var i = 0; i < cases.length; i++) {
-    var got = normalizePubdate_(cases[i][0]);
-    if (got === cases[i][1]) {
+  let passed = 0, failed = 0;
+  for (const [input, expected] of cases) {
+    const got = normalizePubdate_(input);
+    if (got === expected) {
       passed++;
-      Logger.log('✓ "' + cases[i][0] + '" → "' + got + '"');
+      Logger.log(`✓ "${input}" → "${got}"`);
     } else {
       failed++;
-      Logger.log('✗ "' + cases[i][0] + '" expected="' + cases[i][1] + '" got="' + got + '"');
+      Logger.log(`✗ "${input}" expected="${expected}" got="${got}"`);
     }
   }
-  Logger.log('--- Results: ' + passed + ' passed, ' + failed + ' failed ---');
+  Logger.log(`--- Results: ${passed} passed, ${failed} failed ---`);
 }
 
 // ============================================================
@@ -204,7 +199,7 @@ function testNormalizePubdate() {
 // ============================================================
 
 function testIsbnValidation() {
-  var testCases = [
+  const testCases = [
     ['9784641165779', true, 'ゲーム理論 (ISBN-13)'],
     ['978-4-641-16577-9', true, 'ハイフン付きISBN-13'],
     ['9780195132601', true, 'Mechanisms of Governance (ISBN-13)'],
@@ -215,23 +210,18 @@ function testIsbnValidation() {
   ];
 
   Logger.log('=== ISBN Validation Test ===');
-  var passed = 0;
-  var failed = 0;
-  for (var i = 0; i < testCases.length; i++) {
-    var input = testCases[i][0];
-    var expectedValid = testCases[i][1];
-    var desc = testCases[i][2];
-    var result = validateAndNormalizeIsbn(input);
-    var ok = result.valid === expectedValid;
-    if (ok) {
+  let passed = 0, failed = 0;
+  for (const [input, expectedValid, desc] of testCases) {
+    const result = validateAndNormalizeIsbn(input);
+    if (result.valid === expectedValid) {
       passed++;
-      Logger.log('✓ ' + desc + ': ' + input + (result.isbn13 ? ' → ' + result.isbn13 : ''));
+      Logger.log(`✓ ${desc}: ${input}${result.isbn13 ? ' → ' + result.isbn13 : ''}`);
     } else {
       failed++;
-      Logger.log('✗ ' + desc + ': expected=' + expectedValid + ', got=' + result.valid + ' err=' + result.error);
+      Logger.log(`✗ ${desc}: expected=${expectedValid}, got=${result.valid} err=${result.error}`);
     }
   }
-  Logger.log('--- Results: ' + passed + ' passed, ' + failed + ' failed ---');
+  Logger.log(`--- Results: ${passed} passed, ${failed} failed ---`);
 }
 
 // ============================================================
@@ -239,27 +229,27 @@ function testIsbnValidation() {
 // ============================================================
 
 function logResult_(result) {
-  Logger.log('  success: ' + result.success);
+  Logger.log(`  success: ${result.success}`);
   if (result.debug && result.debug.errors && result.debug.errors.length > 0) {
-    Logger.log('  errors:  ' + result.debug.errors.join(', '));
+    Logger.log(`  errors:  ${result.debug.errors.join(', ')}`);
   }
   if (!result.row) {
     Logger.log('  (no result)');
     return;
   }
-  var r = result.row;
-  Logger.log('  id:            ' + r.id);
-  Logger.log('  registeredAt:  ' + r.registeredAt);
-  Logger.log('  isbn:          ' + r.isbn);
-  Logger.log('  title:         ' + r.title);
-  Logger.log('  author:        ' + r.author);
-  Logger.log('  publisher:     ' + r.publisher);
-  Logger.log('  pubdate:       ' + r.pubdate);
-  Logger.log('  genre:         ' + r.genre);
-  Logger.log('  language:      ' + r.language);
-  Logger.log('  shelf:         ' + r.shelf);
-  Logger.log('  status:        ' + r.status);
-  Logger.log('  thumbnailUrl:  ' + (r.thumbnailUrl ? '(exists)' : '(none)'));
+  const r = result.row;
+  Logger.log(`  id:            ${r.id}`);
+  Logger.log(`  registeredAt:  ${r.registeredAt}`);
+  Logger.log(`  isbn:          ${r.isbn}`);
+  Logger.log(`  title:         ${r.title}`);
+  Logger.log(`  author:        ${r.author}`);
+  Logger.log(`  publisher:     ${r.publisher}`);
+  Logger.log(`  pubdate:       ${r.pubdate}`);
+  Logger.log(`  genre:         ${r.genre}`);
+  Logger.log(`  language:      ${r.language}`);
+  Logger.log(`  shelf:         ${r.shelf}`);
+  Logger.log(`  status:        ${r.status}`);
+  Logger.log(`  thumbnailUrl:  ${r.thumbnailUrl ? '(exists)' : '(none)'}`);
 }
 
 function logRawBookInfo_(info) {
@@ -267,13 +257,13 @@ function logRawBookInfo_(info) {
     Logger.log('  (no result)');
     return;
   }
-  Logger.log('  title:         ' + info.title);
-  Logger.log('  authors:       ' + (info.authors || []).join(', '));
-  Logger.log('  publisher:     ' + info.publisher);
-  Logger.log('  publishedDate: ' + info.publishedDate);
-  Logger.log('  language:      ' + info.language);
-  Logger.log('  categories:    ' + (info.categories || []).join(', '));
-  Logger.log('  thumbnail:     ' + (info.thumbnail ? info.thumbnail : '(none)'));
-  Logger.log('  pageCount:     ' + info.pageCount);
-  Logger.log('  source:        ' + info.source);
+  Logger.log(`  title:         ${info.title}`);
+  Logger.log(`  authors:       ${(info.authors || []).join(', ')}`);
+  Logger.log(`  publisher:     ${info.publisher}`);
+  Logger.log(`  publishedDate: ${info.publishedDate}`);
+  Logger.log(`  language:      ${info.language}`);
+  Logger.log(`  categories:    ${(info.categories || []).join(', ')}`);
+  Logger.log(`  thumbnail:     ${info.thumbnail || '(none)'}`);
+  Logger.log(`  pageCount:     ${info.pageCount}`);
+  Logger.log(`  source:        ${info.source}`);
 }

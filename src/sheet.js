@@ -8,27 +8,27 @@
 /**
  * カラム定義（シートのヘッダー順序と一致させる）
  */
-var COLUMNS = [
+const COLUMNS = [
   'id', 'registeredAt', 'isbn', 'title', 'author', 'publisher',
   'pubdate', 'genre', 'language', 'shelf', 'status', 'borrower',
   'updatedAt', 'note', 'thumbnailUrl'
 ];
 
-var HEADERS = [
+const HEADERS = [
   'ID', '登録日時', 'ISBN', 'タイトル', '著者', '出版社',
   '出版年月', 'ジャンル', '言語', '棚', '貸出状態', '借りている人',
   '更新日時', '備考', 'サムネイルURL'
 ];
 
-var SHEET_LIBRARY = 'Library';
-var SHEET_MANUAL = 'Manual';
-var SHEET_SHELVES = 'Shelves';
+const SHEET_LIBRARY = 'Library';
+const SHEET_MANUAL = 'Manual';
+const SHEET_SHELVES = 'Shelves';
 
 /**
  * スクリプトロックを取って fn を実行する（並列書き込み時の保険）
  */
 function withScriptLock_(fn) {
-  var lock = LockService.getScriptLock();
+  const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
     return fn();
@@ -48,22 +48,22 @@ function getShelves(token) {
 }
 
 function getShelves_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEET_SHELVES);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_SHELVES);
   if (!sheet) {
     // 初回: Shelves シートを作成しサンプルデータを書き込む
     sheet = ss.insertSheet(SHEET_SHELVES);
     sheet.getRange(1, 1).setValue('棚ID');
     sheet.setFrozenRows(1);
-    var samples = [['A-1'],['A-2'],['A-3'],['B-1'],['B-2'],['B-3']];
+    const samples = [['A-1'], ['A-2'], ['A-3'], ['B-1'], ['B-2'], ['B-3']];
     sheet.getRange(2, 1, samples.length, 1).setValues(samples);
   }
 
-  var lastRow = sheet.getLastRow();
+  const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return [];
 
-  var data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
-  return data.map(function(row) { return row[0]; }).filter(function(v) { return v !== ''; });
+  const data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  return data.map((row) => row[0]).filter((v) => v !== '');
 }
 
 // ============================================================
@@ -76,14 +76,14 @@ function getShelves_() {
  * @returns {GoogleAppsScript.Spreadsheet.Sheet}
  */
 function ensureSheet_(sheetName) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
     sheet.setFrozenRows(1);
     // ISBN列を文字列書式に
-    var isbnCol = COLUMNS.indexOf('isbn') + 1;
+    const isbnCol = COLUMNS.indexOf('isbn') + 1;
     sheet.getRange(2, isbnCol, sheet.getMaxRows() - 1, 1).setNumberFormat('@');
   }
   return sheet;
@@ -99,19 +99,19 @@ function ensureSheet_(sheetName) {
  * @param {string} sheetName - "Library" or "Manual"
  */
 function addRowToSheet(row, sheetName) {
-  var sheet = ensureSheet_(sheetName);
+  const sheet = ensureSheet_(sheetName);
 
   // row オブジェクト → カラム順の配列に変換
-  var values = COLUMNS.map(function(col) {
-    var val = row[col] !== undefined ? row[col] : '';
+  const values = COLUMNS.map((col) => {
+    const val = row[col] !== undefined ? row[col] : '';
     // ISBNは文字列として保存（先頭 ' を付与）
     if (col === 'isbn' && val) {
-      return "'" + val;
+      return `'${val}`;
     }
     return val;
   });
 
-  withScriptLock_(function() {
+  withScriptLock_(() => {
     sheet.appendRow(values);
   });
 }
@@ -126,7 +126,7 @@ function addRowToSheet(row, sheetName) {
  */
 function registerBookByIsbn(isbn, shelf, token) {
   requireAuth_(token);
-  var result = fetchBookInfo(isbn, shelf);
+  const result = fetchBookInfo(isbn, shelf);
   if (result.success) {
     addRowToSheet(result.row, SHEET_LIBRARY);
   }
@@ -145,7 +145,7 @@ function registerBookByIsbn(isbn, shelf, token) {
  */
 function registerBookManual(data, token) {
   requireAuth_(token);
-  var row = buildManualRow(data);
+  const row = buildManualRow(data);
   addRowToSheet(row, SHEET_MANUAL);
   return { success: true, row: row };
 }
@@ -160,14 +160,14 @@ function registerBookManual(data, token) {
  * @returns {object[]}
  */
 function getBooksBySheet_(sheetName) {
-  var sheet = ensureSheet_(sheetName);
-  var lastRow = sheet.getLastRow();
+  const sheet = ensureSheet_(sheetName);
+  const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return []; // ヘッダーのみ
 
-  var data = sheet.getRange(2, 1, lastRow - 1, COLUMNS.length).getDisplayValues();
-  return data.map(function(rowValues, idx) {
-    var obj = {};
-    for (var i = 0; i < COLUMNS.length; i++) {
+  const data = sheet.getRange(2, 1, lastRow - 1, COLUMNS.length).getDisplayValues();
+  return data.map((rowValues, idx) => {
+    const obj = {};
+    for (let i = 0; i < COLUMNS.length; i++) {
       obj[COLUMNS[i]] = rowValues[i] || '';
     }
     // ISBNの先頭 ' を除去（表示値にはつかないはずだが念のため）
@@ -176,7 +176,7 @@ function getBooksBySheet_(sheetName) {
     }
     // ID が空の場合はフォールバック（シート名+行番号で一意性を確保）
     if (!obj.id) {
-      obj.id = sheetName + '-row-' + (idx + 2);
+      obj.id = `${sheetName}-row-${idx + 2}`;
     }
     return obj;
   });
@@ -189,8 +189,8 @@ function getBooksBySheet_(sheetName) {
  */
 function getAllBooks(token) {
   requireAuth_(token);
-  var library = getBooksBySheet_(SHEET_LIBRARY);
-  var manual = getBooksBySheet_(SHEET_MANUAL);
+  const library = getBooksBySheet_(SHEET_LIBRARY);
+  const manual = getBooksBySheet_(SHEET_MANUAL);
   return library.concat(manual);
 }
 
@@ -208,38 +208,36 @@ function getAllBooks(token) {
  */
 function updateBookById(bookId, updates, token) {
   requireAuth_(token);
-  return withScriptLock_(function() {
-    return updateBookById_(bookId, updates);
-  });
+  return withScriptLock_(() => updateBookById_(bookId, updates));
 }
 
 function updateBookById_(bookId, updates) {
-  var sheetNames = [SHEET_LIBRARY, SHEET_MANUAL];
+  const sheetNames = [SHEET_LIBRARY, SHEET_MANUAL];
 
-  for (var s = 0; s < sheetNames.length; s++) {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetNames[s]);
+  for (const sheetName of sheetNames) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
     if (!sheet) continue;
 
-    var lastRow = sheet.getLastRow();
+    const lastRow = sheet.getLastRow();
     if (lastRow <= 1) continue;
 
-    var idCol = COLUMNS.indexOf('id') + 1;
-    var ids = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
+    const idCol = COLUMNS.indexOf('id') + 1;
+    const ids = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
 
-    for (var i = 0; i < ids.length; i++) {
+    for (let i = 0; i < ids.length; i++) {
       if (ids[i][0] === bookId) {
-        var rowNum = i + 2; // 1-indexed, skip header
+        const rowNum = i + 2; // 1-indexed, skip header
 
         // updatesの各フィールドを書き込み
-        for (var key in updates) {
-          var colIdx = COLUMNS.indexOf(key);
+        for (const key of Object.keys(updates)) {
+          const colIdx = COLUMNS.indexOf(key);
           if (colIdx === -1) continue;
           sheet.getRange(rowNum, colIdx + 1).setValue(updates[key]);
         }
 
         // updatedAt を自動更新
-        var updatedAtCol = COLUMNS.indexOf('updatedAt') + 1;
-        var now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+        const updatedAtCol = COLUMNS.indexOf('updatedAt') + 1;
+        const now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
         sheet.getRange(rowNum, updatedAtCol).setValue(now);
 
         return { success: true };
@@ -247,7 +245,7 @@ function updateBookById_(bookId, updates) {
     }
   }
 
-  return { success: false, error: 'Book not found: ' + bookId };
+  return { success: false, error: `Book not found: ${bookId}` };
 }
 
 // ============================================================
@@ -259,17 +257,17 @@ function updateBookById_(bookId, updates) {
  * シートのカスタムメニューから呼び出す想定
  */
 function refreshSelectedRows() {
-  var sheet = SpreadsheetApp.getActiveSheet();
-  var sheetName = sheet.getName();
+  const sheet = SpreadsheetApp.getActiveSheet();
+  const sheetName = sheet.getName();
 
   if (sheetName !== SHEET_LIBRARY && sheetName !== SHEET_MANUAL) {
     SpreadsheetApp.getUi().alert('Library または Manual シートで実行してください。');
     return;
   }
 
-  var selection = sheet.getActiveRange();
-  var startRow = selection.getRow();
-  var numRows = selection.getNumRows();
+  const selection = sheet.getActiveRange();
+  let startRow = selection.getRow();
+  let numRows = selection.getNumRows();
 
   // ヘッダー行は対象外
   if (startRow < 2) {
@@ -277,41 +275,39 @@ function refreshSelectedRows() {
     numRows = numRows - 1;
   }
 
-  var isbnCol = COLUMNS.indexOf('isbn') + 1;
-  var refreshCount = 0;
-  var errors = [];
+  const isbnCol = COLUMNS.indexOf('isbn') + 1;
+  let refreshCount = 0;
+  const errors = [];
 
-  for (var r = startRow; r < startRow + numRows; r++) {
-    var isbn = sheet.getRange(r, isbnCol).getDisplayValue().replace(/^'/, '');
+  for (let r = startRow; r < startRow + numRows; r++) {
+    const isbn = sheet.getRange(r, isbnCol).getDisplayValue().replace(/^'/, '');
     if (!isbn) {
-      errors.push('行 ' + r + ': ISBNが空です');
+      errors.push(`行 ${r}: ISBNが空です`);
       continue;
     }
 
-    var result = fetchBookInfo(isbn, '');
+    const result = fetchBookInfo(isbn, '');
     if (!result.success) {
-      errors.push('行 ' + r + ' (' + isbn + '): 取得失敗');
+      errors.push(`行 ${r} (${isbn}): 取得失敗`);
       continue;
     }
 
     // 更新対象カラム（id, registeredAt, shelf, status, borrower, updatedAt, note は保持）
-    var updateCols = ['title', 'author', 'publisher', 'pubdate', 'genre', 'language', 'thumbnailUrl'];
-    for (var c = 0; c < updateCols.length; c++) {
-      var col = updateCols[c];
-      var colIdx = COLUMNS.indexOf(col) + 1;
-      var newVal = result.row[col] || '';
-      sheet.getRange(r, colIdx).setValue(newVal);
+    const updateCols = ['title', 'author', 'publisher', 'pubdate', 'genre', 'language', 'thumbnailUrl'];
+    for (const col of updateCols) {
+      const colIdx = COLUMNS.indexOf(col) + 1;
+      sheet.getRange(r, colIdx).setValue(result.row[col] || '');
     }
 
     // updatedAt
-    var updatedAtCol = COLUMNS.indexOf('updatedAt') + 1;
-    var now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
+    const updatedAtCol = COLUMNS.indexOf('updatedAt') + 1;
+    const now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss');
     sheet.getRange(r, updatedAtCol).setValue(now);
 
     refreshCount++;
   }
 
-  var msg = refreshCount + ' 件の書籍情報を再取得しました。';
+  let msg = `${refreshCount} 件の書籍情報を再取得しました。`;
   if (errors.length > 0) {
     msg += '\n\nエラー:\n' + errors.join('\n');
   }
@@ -350,18 +346,18 @@ function ensureAllSheets() {
  * ID列が空の行にUUIDを補完する（既存データの移行用）
  */
 function backfillUuids() {
-  var sheetNames = [SHEET_LIBRARY, SHEET_MANUAL];
-  var idCol = COLUMNS.indexOf('id') + 1;
-  var filled = 0;
+  const sheetNames = [SHEET_LIBRARY, SHEET_MANUAL];
+  const idCol = COLUMNS.indexOf('id') + 1;
+  let filled = 0;
 
-  for (var s = 0; s < sheetNames.length; s++) {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetNames[s]);
+  for (const sheetName of sheetNames) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
     if (!sheet) continue;
-    var lastRow = sheet.getLastRow();
+    const lastRow = sheet.getLastRow();
     if (lastRow <= 1) continue;
 
-    var ids = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
-    for (var i = 0; i < ids.length; i++) {
+    const ids = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
+    for (let i = 0; i < ids.length; i++) {
       if (!ids[i][0] || ids[i][0].toString().trim() === '') {
         sheet.getRange(i + 2, idCol).setValue(Utilities.getUuid());
         filled++;
@@ -369,5 +365,5 @@ function backfillUuids() {
     }
   }
 
-  SpreadsheetApp.getUi().alert(filled + ' 件のUUIDを補完しました。');
+  SpreadsheetApp.getUi().alert(`${filled} 件のUUIDを補完しました。`);
 }

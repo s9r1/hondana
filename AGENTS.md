@@ -22,7 +22,8 @@ GAS + Google Sheets の蔵書管理アプリ。ISBN → Google Books / NDL Searc
 
 ## 注意点
 
-- ランタイムは V8 だがコードは ES5 スタイル (`var`、古い for ループ) で統一。新規コードも合わせる。
+- コードは ES2017+。ただし GAS から直接呼ばれる関数 (`doGet`、`onOpen`、`google.script.run` の呼び先) はトップレベル `function` 宣言のまま (const 代入だと GAS が認識しない)。
+- 公開サーバー関数は末尾引数 `token` を取り先頭で `requireAuth_` を呼ぶのが規約 (APP_PASSWORD 未設定なら素通し)。フロントは `gasRun` が自動付加するので意識不要。
 - ISBN: 入力は 10/13 桁ハイフン有無自由、内部は常に ISBN-13 13桁数字、シート上は `setNumberFormat('@')` + 先頭 `'` 付き。読み出し (`getBooksBySheet_`) で `'` を剥がす。
 - `isbn.js` / `googleBooks.js` は末尾で `module.exports` し、`dev/fetchLocal.js` から Node でも使う。GAS では無害。
 - ログは `Logger.log` (GAS エディタの実行ログ)。`console.log` ではない。

@@ -1,10 +1,10 @@
 // ============================================================
 // サイト設定 — ここだけ変更すれば OK
 // ============================================================
-var SITE_NAME = 'Hondana';  // e.g. 'XY大学Z研究室 蔵書管理'
+const SITE_NAME = 'Hondana';  // e.g. 'XY大学Z研究室 蔵書管理'
 
 function doGet() {
-  var template = HtmlService.createTemplateFromFile('Index');
+  const template = HtmlService.createTemplateFromFile('Index');
   template.siteName = SITE_NAME;
   return template.evaluate()
     .setTitle(SITE_NAME)
@@ -19,7 +19,7 @@ function doGet() {
  */
 function isPasswordRequired() {
   try {
-    var pw = PropertiesService.getScriptProperties().getProperty('APP_PASSWORD');
+    const pw = PropertiesService.getScriptProperties().getProperty('APP_PASSWORD');
     return !!(pw && pw.length > 0);
   } catch (e) {
     return false;
@@ -33,10 +33,10 @@ function isPasswordRequired() {
  */
 function checkAppPassword(input) {
   try {
-    var pw = PropertiesService.getScriptProperties().getProperty('APP_PASSWORD');
+    const pw = PropertiesService.getScriptProperties().getProperty('APP_PASSWORD');
     if (!pw || input !== pw) return '';
-    var token = Utilities.getUuid();
-    CacheService.getScriptCache().put('tok:' + token, '1', 21600); // 6時間有効
+    const token = Utilities.getUuid();
+    CacheService.getScriptCache().put(`tok:${token}`, '1', 21600); // 6時間有効
     return token;
   } catch (e) {
     return '';
@@ -49,9 +49,9 @@ function checkAppPassword(input) {
  * @param {string} token
  */
 function requireAuth_(token) {
-  var pw = PropertiesService.getScriptProperties().getProperty('APP_PASSWORD');
+  const pw = PropertiesService.getScriptProperties().getProperty('APP_PASSWORD');
   if (!pw) return;
-  if (!token || !CacheService.getScriptCache().get('tok:' + token)) {
+  if (!token || !CacheService.getScriptCache().get(`tok:${token}`)) {
     throw new Error('AUTH_REQUIRED');
   }
 }
