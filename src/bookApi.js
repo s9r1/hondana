@@ -80,6 +80,23 @@ function cleanAuthorName_(name) {
 }
 
 /**
+ * 出版日を保存用に正規化する
+ * 精度は落とさない: '2024' / '2024.3' → '2024-03' / '2024.3.5' → '2024-03-05'
+ * 'c2018' '[2024]' などの装飾は除去。4桁年が見つからなければそのまま返す
+ */
+function normalizePubdate_(s) {
+  if (!s) return '';
+  var m = String(s).match(/(\d{4})(?:\D+(\d{1,2}))?(?:\D+(\d{1,2}))?/);
+  if (!m) return String(s);
+  var out = m[1];
+  if (m[2]) {
+    out += '-' + ('0' + m[2]).slice(-2);
+    if (m[3]) out += '-' + ('0' + m[3]).slice(-2);
+  }
+  return out;
+}
+
+/**
  * API結果からシート1行分のデータを構築する
  *
  * マージ方針:
@@ -112,7 +129,7 @@ function buildSheetRow(isbn13, gb, ndl, shelf) {
   }
 
   // 出版年月: GB → NDL
-  var pubdate = (gb && gb.publishedDate) || (ndl && ndl.publishedDate) || '';
+  var pubdate = normalizePubdate_((gb && gb.publishedDate) || (ndl && ndl.publishedDate) || '');
 
   // 出版社: NDL 優先 → GB
   var publisher = (ndl && ndl.publisher) || (gb && gb.publisher) || '';
@@ -171,7 +188,7 @@ function buildManualRow(data) {
     title: data.title || '',
     author: data.author || '',
     publisher: data.publisher || '',
-    pubdate: data.pubdate || '',
+    pubdate: normalizePubdate_(data.pubdate || ''),
     genre: data.genre || '',
     language: data.language || '',
     shelf: data.shelf || '',

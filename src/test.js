@@ -130,6 +130,37 @@ function testRegisterByIsbn() {
 }
 
 // ============================================================
+// pubdate正規化テスト
+// ============================================================
+
+function testNormalizePubdate() {
+  var cases = [
+    ['2024-03-15', '2024-03-15'],
+    ['2024-03', '2024-03'],
+    ['2024.3', '2024-03'],
+    ['2024.3.5', '2024-03-05'],
+    ['[2024]', '2024'],
+    ['c2018', '2018'],
+    ['2024年3月', '2024-03'],
+    ['', ''],
+    ['unknown', 'unknown'],
+  ];
+  Logger.log('=== normalizePubdate_ Test ===');
+  var passed = 0, failed = 0;
+  for (var i = 0; i < cases.length; i++) {
+    var got = normalizePubdate_(cases[i][0]);
+    if (got === cases[i][1]) {
+      passed++;
+      Logger.log('✓ "' + cases[i][0] + '" → "' + got + '"');
+    } else {
+      failed++;
+      Logger.log('✗ "' + cases[i][0] + '" expected="' + cases[i][1] + '" got="' + got + '"');
+    }
+  }
+  Logger.log('--- Results: ' + passed + ' passed, ' + failed + ' failed ---');
+}
+
+// ============================================================
 // ISBN検証テスト
 // ============================================================
 

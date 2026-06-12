@@ -40,9 +40,10 @@ body { min-height: 100dvh; }
 .btn-icon { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
 .btn-icon:active { background: var(--bg); }
 .btn-lang { font-size: 12px; width: auto; padding: 0 8px; font-weight: 600; }
-.search-box { width: 180px; }
-.search-box input { width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg); outline: none; }
+.search-box { width: 250px; display: flex; gap: 4px; }
+.search-box input { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg); outline: none; }
 .search-box input:focus { border-color: var(--accent); }
+.search-box select { font-size: 12px; padding: 0 4px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text2); outline: none; cursor: pointer; }
 
 /* Toolbar — single compact row */
 .toolbar { max-width: 1200px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; overflow-x: auto; }
@@ -67,6 +68,7 @@ body { min-height: 100dvh; }
 .badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 0 5px; border-radius: 3px; line-height: 1.6; }
 .badge.ok { background: #dcfce7; color: var(--green); }
 .badge.out { background: #fef2f2; color: var(--red); }
+.badge.shelf { background: var(--accent-light); color: var(--accent); }
 
 /* Pagination */
 .pagination { max-width: 1200px; margin: 0 auto; padding: 12px 16px 24px; display: flex; justify-content: center; gap: 4px; }
@@ -176,6 +178,7 @@ body { min-height: 100dvh; }
       <span id="book-count" class="book-count"></span>
       <span class="spacer"></span>
       <div class="search-box">
+        <select id="search-scope"></select>
         <input type="text" id="search-input">
       </div>
       <button id="btn-lang" class="btn-icon btn-lang">EN</button>
@@ -193,6 +196,12 @@ body { min-height: 100dvh; }
     <span class="sep">|</span>
     <label id="lbl-status-filter"></label>
     <select id="filter-status"></select>
+    <span class="sep">|</span>
+    <label id="lbl-shelf-filter"></label>
+    <select id="filter-shelf"></select>
+    <span class="sep">|</span>
+    <label id="lbl-genre-filter"></label>
+    <select id="filter-genre"></select>
   </div>
 
   <main id="book-grid" class="book-grid"></main>
@@ -320,7 +329,7 @@ body { min-height: 100dvh; }
       titleSort: 'タイトル', desc: '降順', asc: '昇順', langFilter: '言語',
       all: 'すべて', ja: '和書', en: '洋書', other: '他',
       statusFilter: '状態', available: '在庫', lent: '貸出中',
-      noBooks: '本が見つかりません', noCover: 'No Cover',
+      noBooks: '本が見つかりません', noCover: 'No Cover', loading: '読み込み中…',
       register: '本を登録', shelf: '棚', barcode: 'バーコード', manual: '手動入力',
       fetchInfo: '検索して登録', titleLabel: 'タイトル *', authorLabel: '著者',
       publisherLabel: '出版社', pubdateLabel: '出版年月', genreLabel: 'ジャンル',
@@ -345,7 +354,7 @@ body { min-height: 100dvh; }
       titleSort: 'Title', desc: 'Desc', asc: 'Asc', langFilter: 'Lang',
       all: 'All', ja: 'JA', en: 'EN', other: 'Other',
       statusFilter: 'Status', available: 'Available', lent: 'Lent',
-      noBooks: 'No books found', noCover: 'No Cover',
+      noBooks: 'No books found', noCover: 'No Cover', loading: 'Loading…',
       register: 'Add Book', shelf: 'Shelf', barcode: 'Barcode', manual: 'Manual',
       fetchInfo: 'Lookup & Register', titleLabel: 'Title *', authorLabel: 'Author',
       publisherLabel: 'Publisher', pubdateLabel: 'Pub. date', genreLabel: 'Genre',
@@ -376,8 +385,10 @@ body { min-height: 100dvh; }
   var PAGE_SIZE = 24;
   var allBooks = [], filteredBooks = [], currentPage = 1;
   var sortKey = 'registeredAt', sortAsc = false;
-  var filterLang = 'all', filterStatus = 'all', searchQuery = '';
+  var filterLang = 'all', filterStatus = 'all', filterShelf = 'all', filterGenre = 'all';
+  var searchQuery = '', searchScope = 'all';
   var shelves = [], selectedShelf = '';
+  var jaCollator = (typeof Intl !== 'undefined' && Intl.Collator) ? new Intl.Collator('ja') : null;
 
   var isGAS = (typeof google !== 'undefined' && google.script && google.script.run);
 
@@ -424,6 +435,10 @@ body { min-height: 100dvh; }
     try { document.querySelector('title').textContent = CONFIG.siteName; } catch(e) {}
     document.getElementById('search-input').placeholder = t('search');
     document.getElementById('btn-lang').textContent = t('toggleLang');
+    var ssEl = document.getElementById('search-scope');
+    var prevSS = ssEl.value || searchScope;
+    ssEl.innerHTML = '<option value="all">'+t('all')+'</option><option value="title">'+t('titleSort')+'</option><option value="author">'+t('authorLabel')+'</option><option value="publisher">'+t('publisherLabel')+'</option>';
+    ssEl.value = prevSS;
 
     // Toolbar
     var sortKeyEl = document.getElementById('sort-key');
@@ -443,6 +458,9 @@ body { min-height: 100dvh; }
     var prevFS = fsEl.value || 'all';
     fsEl.innerHTML = '<option value="all">'+t('all')+'</option><option value="在庫">'+t('available')+'</option><option value="貸出中">'+t('lent')+'</option>';
     fsEl.value = prevFS;
+    document.getElementById('lbl-shelf-filter').textContent = t('shelf');
+    document.getElementById('lbl-genre-filter').textContent = t('genre');
+    updateFilterOptions();
 
     // Modal
     document.getElementById('lbl-lending').textContent = t('lending');
@@ -486,7 +504,8 @@ body { min-height: 100dvh; }
     // Auth check
     checkAuth(function() {
       applyLabels();
-      loadBooks(function() { applyFilters(); });
+      document.getElementById('book-grid').innerHTML = '<div class="empty">' + t('loading') + '</div>';
+      loadBooks(function() { updateFilterOptions(); applyFilters(); });
       loadShelves(function(){}); // 棚データを先読み
       bindListEvents();
       bindRegisterEvents();
@@ -553,10 +572,13 @@ body { min-height: 100dvh; }
   // ============================================================
   function bindListEvents() {
     document.getElementById('search-input').addEventListener('input', function(){ searchQuery = this.value; currentPage = 1; applyFilters(); });
+    document.getElementById('search-scope').addEventListener('change', function(){ searchScope = this.value; currentPage = 1; applyFilters(); });
     document.getElementById('sort-key').addEventListener('change', function(){ sortKey = this.value; currentPage = 1; applyFilters(); });
     document.getElementById('sort-dir').addEventListener('click', function(){ sortAsc = !sortAsc; this.textContent = sortAsc ? '↑' : '↓'; currentPage = 1; applyFilters(); });
     document.getElementById('filter-lang').addEventListener('change', function(){ filterLang = this.value; currentPage = 1; applyFilters(); });
     document.getElementById('filter-status').addEventListener('change', function(){ filterStatus = this.value; currentPage = 1; applyFilters(); });
+    document.getElementById('filter-shelf').addEventListener('change', function(){ filterShelf = this.value; currentPage = 1; applyFilters(); });
+    document.getElementById('filter-genre').addEventListener('change', function(){ filterGenre = this.value; currentPage = 1; applyFilters(); });
     document.getElementById('modal-bg').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
     document.getElementById('modal-close').addEventListener('click', closeModal);
     document.getElementById('btn-save-lending').addEventListener('click', saveLending);
@@ -568,21 +590,92 @@ body { min-height: 100dvh; }
   }
 
   function applyFilters() {
-    var q = searchQuery.toLowerCase().trim();
+    // スペース区切り AND 検索。クエリ・対象文字列とも norm() で正規化して比較
+    var tokens = norm(searchQuery).split(/\s+/).filter(Boolean);
     filteredBooks = allBooks.filter(function(b) {
       if (filterLang === 'ja' && b.language !== 'ja' && b.language !== '') return false;
       if (filterLang === 'en' && b.language !== 'en') return false;
       if (filterLang === 'other' && (b.language === 'ja' || b.language === 'en' || b.language === '')) return false;
       if (filterStatus !== 'all' && b.status !== filterStatus) return false;
-      if (q) { var h = [b.title,b.author,b.isbn,b.publisher,b.shelf,b.genre].join(' ').toLowerCase(); if (h.indexOf(q)===-1) return false; }
+      if (filterShelf !== 'all' && b.shelf !== filterShelf) return false;
+      if (filterGenre !== 'all' && splitGenres(b.genre).indexOf(filterGenre) === -1) return false;
+      if (tokens.length) {
+        var fields;
+        if (searchScope === 'title') fields = [b.title];
+        else if (searchScope === 'author') fields = [b.author];
+        else if (searchScope === 'publisher') fields = [b.publisher];
+        else fields = [b.title, b.author, b.isbn, b.publisher, b.shelf, b.genre, b.note];
+        var h = norm(fields.join(' '));
+        for (var i = 0; i < tokens.length; i++) { if (h.indexOf(tokens[i]) === -1) return false; }
+      }
       return true;
     });
-    filteredBooks.sort(function(a,b) {
-      var va=(a[sortKey]||'').toLowerCase(), vb=(b[sortKey]||'').toLowerCase();
-      var c = va<vb?-1:(va>vb?1:0);
-      return sortAsc?c:-c;
-    });
+    sortBooks(filteredBooks);
     renderList();
+  }
+
+  function sortBooks(list) {
+    list.sort(function(a, b) {
+      var c;
+      if (sortKey === 'title') {
+        c = jaCollator ? jaCollator.compare(a.title || '', b.title || '')
+          : ((a.title || '') < (b.title || '') ? -1 : ((a.title || '') > (b.title || '') ? 1 : 0));
+      } else if (sortKey === 'pubdate') {
+        var ka = pubdateKey(a.pubdate), kb = pubdateKey(b.pubdate);
+        c = (ka[0] - kb[0]) || (ka[1] - kb[1]) || (ka[2] - kb[2]);
+      } else {
+        c = dateTs(a.registeredAt) - dateTs(b.registeredAt);
+      }
+      return sortAsc ? c : -c;
+    });
+  }
+
+  // '2024' / '2024-03' / '2024.3.15' などを [年,月,日] に。欠損は 0
+  function pubdateKey(d) {
+    var m = ('' + (d || '')).match(/(\d{4})(?:\D+(\d{1,2}))?(?:\D+(\d{1,2}))?/);
+    if (!m) return [0, 0, 0];
+    return [+m[1], +(m[2] || 0), +(m[3] || 0)];
+  }
+
+  // シートのロケール次第で getDisplayValues の日時形式が変わる（ゼロ埋めなし等）ため、
+  // 文字列比較ではなく Date にパースして比較する
+  function dateTs(v) {
+    if (!v) return 0;
+    var t = new Date(v).getTime();
+    if (isNaN(t)) t = new Date(('' + v).replace(/-/g, '/')).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+
+  function splitGenres(g) { return ('' + (g || '')).split(/[,、]\s*/).filter(Boolean); }
+
+  // NFKC正規化 + 小文字化 + カタカナ→ひらがな（かな違いでもヒットさせる）
+  function norm(s) {
+    if (!s) return '';
+    s = '' + s;
+    if (s.normalize) s = s.normalize('NFKC');
+    s = s.toLowerCase().trim();
+    return s.replace(/[ァ-ヶ]/g, function(ch) { return String.fromCharCode(ch.charCodeAt(0) - 0x60); });
+  }
+
+  // 棚・ジャンルフィルタの選択肢を allBooks から再構築（選択値は維持）
+  function updateFilterOptions() {
+    var shelfSel = document.getElementById('filter-shelf');
+    var genreSel = document.getElementById('filter-genre');
+    var shelfOpts = [], genreOpts = [];
+    allBooks.forEach(function(b) {
+      if (b.shelf && shelfOpts.indexOf(b.shelf) === -1) shelfOpts.push(b.shelf);
+      splitGenres(b.genre).forEach(function(g) { if (genreOpts.indexOf(g) === -1) genreOpts.push(g); });
+    });
+    shelfOpts.sort();
+    genreOpts.sort(function(a, b) { return jaCollator ? jaCollator.compare(a, b) : (a < b ? -1 : 1); });
+    function rebuild(sel, items, cur) {
+      sel.innerHTML = '<option value="all">' + t('all') + '</option>'
+        + items.map(function(v) { return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join('');
+      sel.value = items.indexOf(cur) !== -1 ? cur : 'all';
+      return sel.value;
+    }
+    filterShelf = rebuild(shelfSel, shelfOpts, filterShelf);
+    filterGenre = rebuild(genreSel, genreOpts, filterGenre);
   }
 
   function renderList() {
@@ -606,6 +699,7 @@ body { min-height: 100dvh; }
       +'<div class="card-title">'+esc(b.title||'(—)')+'</div>'
       +'<div class="card-author">'+esc(b.author||'—')+'</div>'
       +'<div class="card-meta"><span>'+esc(yr)+'</span>'
+      +(b.shelf?'<span class="badge shelf">'+esc(b.shelf)+'</span>':'')
       +'<span class="badge '+(lent?'out':'ok')+'">'+(lent?t('lent'):t('available'))+'</span>'
       +'</div></div></div>';
   }
@@ -675,7 +769,7 @@ body { min-height: 100dvh; }
   function initRegisterView(){if(shelves.length){renderShelves();}else{loadShelves(function(){renderShelves();});}}
 
   function bindRegisterEvents(){
-    document.getElementById('btn-back').addEventListener('click',function(){applyFilters();showView('list');});
+    document.getElementById('btn-back').addEventListener('click',function(){updateFilterOptions();applyFilters();showView('list');});
     document.getElementById('tab-barcode').addEventListener('click',function(){setMode('barcode');});
     document.getElementById('tab-manual').addEventListener('click',function(){setMode('manual');});
     document.getElementById('btn-scan-start').addEventListener('click', startScan);
