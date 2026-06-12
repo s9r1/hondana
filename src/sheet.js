@@ -25,10 +25,29 @@ var SHEET_MANUAL = 'Manual';
 var SHEET_SHELVES = 'Shelves';
 
 /**
- * Shelvesシートから棚IDリストを取得する
+ * スクリプトロックを取って fn を実行する（並列書き込み時の保険）
+ */
+function withScriptLock_(fn) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Shelvesシートから棚IDリストを取得する（Webアプリ用）
+ * @param {string} [token] - 認証トークン
  * @returns {string[]}
  */
-function getShelves() {
+function getShelves(token) {
+  requireAuth_(token);
+  return getShelves_();
+}
+
+function getShelves_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_SHELVES);
   if (!sheet) {
@@ -92,7 +111,9 @@ function addRowToSheet(row, sheetName) {
     return val;
   });
 
-  sheet.appendRow(values);
+  withScriptLock_(function() {
+    sheet.appendRow(values);
+  });
 }
 
 /**
@@ -100,9 +121,11 @@ function addRowToSheet(row, sheetName) {
  *
  * @param {string} isbn - ISBN
  * @param {string} shelf - 棚ID
+ * @param {string} [token] - 認証トークン
  * @returns {object} { success, row, debug }
  */
-function registerBookByIsbn(isbn, shelf) {
+function registerBookByIsbn(isbn, shelf, token) {
+  requireAuth_(token);
   var result = fetchBookInfo(isbn, shelf);
   if (result.success) {
     addRowToSheet(result.row, SHEET_LIBRARY);
@@ -117,9 +140,11 @@ function registerBookByIsbn(isbn, shelf) {
  * 直接呼ぶため、ここに来るのは「API未ヒット or ISBNなし」のケースのみ。
  *
  * @param {object} data - { isbn?, title, author, publisher, pubdate, genre, language, shelf, note }
+ * @param {string} [token] - 認証トークン
  * @returns {object} { success, row }
  */
-function registerBookManual(data) {
+function registerBookManual(data, token) {
+  requireAuth_(token);
   var row = buildManualRow(data);
   addRowToSheet(row, SHEET_MANUAL);
   return { success: true, row: row };
@@ -159,9 +184,11 @@ function getBooksBySheet_(sheetName) {
 
 /**
  * Library + Manual の全書籍データを返す（Webアプリ用）
+ * @param {string} [token] - 認証トークン
  * @returns {object[]}
  */
-function getAllBooks() {
+function getAllBooks(token) {
+  requireAuth_(token);
   var library = getBooksBySheet_(SHEET_LIBRARY);
   var manual = getBooksBySheet_(SHEET_MANUAL);
   return library.concat(manual);
@@ -176,9 +203,17 @@ function getAllBooks() {
  *
  * @param {string} bookId - UUID
  * @param {object} updates - 更新するフィールド（例: { status: '貸出中', borrower: '田中' }）
+ * @param {string} [token] - 認証トークン
  * @returns {object} { success, error? }
  */
-function updateBookById(bookId, updates) {
+function updateBookById(bookId, updates, token) {
+  requireAuth_(token);
+  return withScriptLock_(function() {
+    return updateBookById_(bookId, updates);
+  });
+}
+
+function updateBookById_(bookId, updates) {
   var sheetNames = [SHEET_LIBRARY, SHEET_MANUAL];
 
   for (var s = 0; s < sheetNames.length; s++) {
@@ -308,7 +343,7 @@ function onOpen() {
 function ensureAllSheets() {
   ensureSheet_(SHEET_LIBRARY);
   ensureSheet_(SHEET_MANUAL);
-  getShelves(); // Shelves は getShelves 内で自動作成される
+  getShelves_(); // Shelves は getShelves_ 内で自動作成される
 }
 
 /**

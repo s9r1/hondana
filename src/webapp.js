@@ -27,15 +27,31 @@ function isPasswordRequired() {
 }
 
 /**
- * パスワードを検証する
+ * パスワードを検証し、成功なら認証トークンを発行する
  * @param {string} input - ユーザー入力
- * @returns {boolean}
+ * @returns {string} トークン（失敗時は空文字）
  */
 function checkAppPassword(input) {
   try {
     var pw = PropertiesService.getScriptProperties().getProperty('APP_PASSWORD');
-    return pw === input;
+    if (!pw || input !== pw) return '';
+    var token = Utilities.getUuid();
+    CacheService.getScriptCache().put('tok:' + token, '1', 21600); // 6時間有効
+    return token;
   } catch (e) {
-    return false;
+    return '';
+  }
+}
+
+/**
+ * トークンを検証する。APP_PASSWORD 未設定なら素通し。
+ * 各公開エンドポイントの先頭で呼ぶ
+ * @param {string} token
+ */
+function requireAuth_(token) {
+  var pw = PropertiesService.getScriptProperties().getProperty('APP_PASSWORD');
+  if (!pw) return;
+  if (!token || !CacheService.getScriptCache().get('tok:' + token)) {
+    throw new Error('AUTH_REQUIRED');
   }
 }

@@ -74,7 +74,7 @@ function testRegisterOne() {
   var isbn = '9784641165779';  // ← ここを書き換える
   var shelf = 'A-1';           // ← 棚を指定
   Logger.log('=== Register: ' + isbn + ' to Library ===');
-  var result = registerBookByIsbn(isbn, shelf);
+  var result = registerBookByIsbn(isbn, shelf, makeTestToken_());
   logResult_(result);
 }
 
@@ -93,7 +93,7 @@ function testRegisterManual() {
     language: 'ja',
     shelf: 'B-2',
     note: 'テスト備考'
-  });
+  }, makeTestToken_());
   logResult_(result);
 }
 
@@ -102,7 +102,7 @@ function testRegisterManual() {
  */
 function testGetAllBooks() {
   Logger.log('=== Get All Books ===');
-  var books = getAllBooks();
+  var books = getAllBooks(makeTestToken_());
   Logger.log('Total: ' + books.length + ' books');
   for (var i = 0; i < books.length; i++) {
     Logger.log('[' + (i + 1) + '] ' + books[i].title + ' (' + books[i].isbn + ') shelf=' + books[i].shelf);
@@ -114,7 +114,7 @@ function testGetAllBooks() {
  */
 function testGetShelves() {
   Logger.log('=== Get Shelves ===');
-  var sh = getShelves();
+  var sh = getShelves(makeTestToken_());
   Logger.log('Shelves (' + sh.length + '): ' + sh.join(', '));
 }
 
@@ -125,8 +125,47 @@ function testRegisterByIsbn() {
   var isbn = '9784641165779';  // ← ここを書き換える
   var shelf = 'A-1';
   Logger.log('=== Register by ISBN: ' + isbn + ' to ' + shelf + ' ===');
-  var result = registerBookByIsbn(isbn, shelf);
+  var result = registerBookByIsbn(isbn, shelf, makeTestToken_());
   logResult_(result);
+}
+
+// ============================================================
+// 認証テスト
+// ============================================================
+
+/**
+ * GASエディタからのテスト実行用に有効な認証トークンを発行する
+ * （APP_PASSWORD 未設定時は何でも通るので形式だけ）
+ */
+function makeTestToken_() {
+  var token = Utilities.getUuid();
+  CacheService.getScriptCache().put('tok:' + token, '1', 300);
+  return token;
+}
+
+/**
+ * requireAuth_ の素通し/拒否テスト
+ */
+function testRequireAuth() {
+  Logger.log('=== requireAuth_ Test ===');
+  var pwSet = isPasswordRequired();
+  Logger.log('APP_PASSWORD set: ' + pwSet);
+
+  // 有効トークン → 通る
+  try {
+    requireAuth_(makeTestToken_());
+    Logger.log('✓ valid token accepted');
+  } catch (e) {
+    Logger.log('✗ valid token rejected: ' + e.message);
+  }
+
+  // 不正トークン → APP_PASSWORD 設定時のみ throw
+  try {
+    requireAuth_('bogus-token');
+    Logger.log(pwSet ? '✗ bogus token accepted (should throw)' : '✓ no password → pass-through');
+  } catch (e) {
+    Logger.log(pwSet ? '✓ bogus token rejected: ' + e.message : '✗ threw despite no password: ' + e.message);
+  }
 }
 
 // ============================================================

@@ -391,13 +391,26 @@ body { min-height: 100dvh; }
   var jaCollator = (typeof Intl !== 'undefined' && Intl.Collator) ? new Intl.Collator('ja') : null;
 
   var isGAS = (typeof google !== 'undefined' && google.script && google.script.run);
+  var authToken = '';
 
   function gasRun(fn) {
     var args = Array.prototype.slice.call(arguments, 1);
+    args.push(authToken); // サーバー側は末尾引数でトークン検証（不要な関数では無視される）
     return { then: function(ok, fail) {
-      var r = google.script.run.withSuccessHandler(ok).withFailureHandler(fail || function(e){ console.error(fn,e); });
+      var onFail = function(e) {
+        if (e && /AUTH_REQUIRED/.test(e.message || '')) { handleAuthExpired(); return; }
+        (fail || function(err){ console.error(fn, err); })(e);
+      };
+      var r = google.script.run.withSuccessHandler(ok).withFailureHandler(onFail);
       r[fn].apply(r, args);
     }};
+  }
+
+  // トークン期限切れ（6時間）: ゲートを再表示し、再ログイン後にリロード
+  function handleAuthExpired() {
+    authToken = '';
+    try { sessionStorage.removeItem('hondana-auth'); } catch(e) {}
+    showLoginGate(function(){ location.reload(); });
   }
 
   function loadBooks(cb) {
@@ -522,43 +535,52 @@ body { min-height: 100dvh; }
     gasRun('isPasswordRequired').then(function(required) {
       if (!required) { onReady(); return; }
 
-      // Check session
-      var session = ''; try { session = sessionStorage.getItem('hondana-auth') || ''; } catch(e) {}
-      if (session === 'ok') { onReady(); return; }
+      // 保存済みトークンがあれば楽観的に通す（期限切れならサーバーが弾いて再ログイン）
+      var saved = ''; try { saved = sessionStorage.getItem('hondana-auth') || ''; } catch(e) {}
+      if (saved && saved !== 'ok') { authToken = saved; onReady(); return; }
 
-      // Show login gate
-      var gate = document.getElementById('login-gate');
-      gate.style.display = '';
-      var pwInput = document.getElementById('login-pw');
-      var errEl = document.getElementById('login-error');
-      var btn = document.getElementById('login-btn');
-      document.getElementById('login-title').textContent = CONFIG.siteName;
+      showLoginGate(onReady);
+    }, function() { onReady(); }); // If server call fails, skip auth
+  }
 
-      function submit() {
-        var pw = pwInput.value;
-        if (!pw) return;
-        btn.disabled = true; btn.textContent = '...';
-        errEl.textContent = '';
-        gasRun('checkAppPassword', pw).then(function(ok) {
-          btn.disabled = false; btn.textContent = 'OK';
-          if (ok) {
-            try { sessionStorage.setItem('hondana-auth', 'ok'); } catch(e) {}
-            gate.style.display = 'none';
-            onReady();
-          } else {
-            errEl.textContent = lang === 'ja' ? 'パスワードが違います' : 'Incorrect password';
-            pwInput.value = '';
-            pwInput.focus();
-          }
-        }, function() {
-          btn.disabled = false; btn.textContent = 'OK';
-          errEl.textContent = 'Error';
-        });
-      }
+  var loginGateBound = false, loginOnReady = null;
+  function showLoginGate(onReady) {
+    loginOnReady = onReady;
+    var gate = document.getElementById('login-gate');
+    gate.style.display = '';
+    var pwInput = document.getElementById('login-pw');
+    var errEl = document.getElementById('login-error');
+    var btn = document.getElementById('login-btn');
+    document.getElementById('login-title').textContent = CONFIG.siteName;
+
+    function submit() {
+      var pw = pwInput.value;
+      if (!pw) return;
+      btn.disabled = true; btn.textContent = '...';
+      errEl.textContent = '';
+      gasRun('checkAppPassword', pw).then(function(token) {
+        btn.disabled = false; btn.textContent = 'OK';
+        if (token) {
+          authToken = token;
+          try { sessionStorage.setItem('hondana-auth', token); } catch(e) {}
+          gate.style.display = 'none';
+          if (loginOnReady) loginOnReady();
+        } else {
+          errEl.textContent = lang === 'ja' ? 'パスワードが違います' : 'Incorrect password';
+          pwInput.value = '';
+          pwInput.focus();
+        }
+      }, function() {
+        btn.disabled = false; btn.textContent = 'OK';
+        errEl.textContent = 'Error';
+      });
+    }
+    if (!loginGateBound) {
+      loginGateBound = true;
       btn.addEventListener('click', submit);
       pwInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') submit(); });
-      pwInput.focus();
-    }, function() { onReady(); }); // If server call fails, skip auth
+    }
+    pwInput.focus();
   }
 
   function showView(name) {
@@ -994,7 +1016,9 @@ body { min-height: 100dvh; }
     setTimeout(function(){ el.classList.remove('show'); setTimeout(function(){ el.remove(); }, 300); }, 3000);
   }
   function extractYear(d){if(!d)return '';var m=d.match(/(\d{4})/);return m?m[1]:d;}
-  function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+  // 属性値内でも使うため引用符もエスケープする
+  var ESC_MAP = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' };
+  function esc(s){ if(s==null||s==='')return ''; return String(s).replace(/[&<>"']/g, function(c){ return ESC_MAP[c]; }); }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
