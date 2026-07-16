@@ -16,7 +16,17 @@ function parseGoogleBooksResponse(isbn13, json) {
     return null;
   }
 
-  const vol = json.items[0].volumeInfo || {};
+  // q=isbn: はゆるい一致で別の版や別の本を返すことがあるため、
+  // industryIdentifiers に問い合わせISBNが完全一致する item を優先する。
+  // 同点ならサムネイルを持つものを選び、一致ゼロなら従来通り先頭を使う
+  const matches = json.items.filter((item) => {
+    const ids = (item.volumeInfo && item.volumeInfo.industryIdentifiers) || [];
+    return ids.some((id) => id.identifier === isbn13);
+  });
+  const pool = matches.length > 0 ? matches : json.items;
+  const picked = pool.find((item) => item.volumeInfo && item.volumeInfo.imageLinks) || pool[0];
+
+  const vol = picked.volumeInfo || {};
 
   return {
     isbn: isbn13,

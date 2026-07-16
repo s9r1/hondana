@@ -33,10 +33,18 @@ function isPasswordRequired() {
  */
 function checkAppPassword(input) {
   try {
+    const cache = CacheService.getScriptCache();
+    // 総当たり対策: 失敗が10回に達したら15分間は正しいパスワードでも受け付けない
+    const fails = parseInt(cache.get('pwfail') || '0', 10);
+    if (fails >= 10) return '';
     const pw = PropertiesService.getScriptProperties().getProperty('APP_PASSWORD');
-    if (!pw || input !== pw) return '';
+    if (!pw || input !== pw) {
+      cache.put('pwfail', String(fails + 1), 900);
+      return '';
+    }
+    cache.remove('pwfail');
     const token = Utilities.getUuid();
-    CacheService.getScriptCache().put(`tok:${token}`, '1', 21600); // 6時間有効
+    cache.put(`tok:${token}`, '1', 21600); // 6時間有効
     return token;
   } catch (e) {
     return '';

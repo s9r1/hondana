@@ -111,7 +111,8 @@ function testGetAllBooks() {
 function testGetShelves() {
   Logger.log('=== Get Shelves ===');
   const sh = getShelves(makeTestToken_());
-  Logger.log(`Shelves (${sh.length}): ${sh.join(', ')}`);
+  const ids = sh.map((s) => (s.no ? `${s.name}-${s.no}` : s.name));
+  Logger.log(`Shelves (${sh.length}): ${ids.join(', ')}`);
 }
 
 /**

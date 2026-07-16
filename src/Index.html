@@ -199,9 +199,6 @@ body { min-height: 100dvh; }
     <span class="sep">|</span>
     <label id="lbl-shelf-filter"></label>
     <select id="filter-shelf"></select>
-    <span class="sep">|</span>
-    <label id="lbl-genre-filter"></label>
-    <select id="filter-genre"></select>
   </div>
 
   <main id="book-grid" class="book-grid"></main>
@@ -216,6 +213,10 @@ body { min-height: 100dvh; }
       <table class="detail-table"><tbody id="detail-table"></tbody></table>
       <div class="lending-section">
         <h3 id="lbl-lending"></h3>
+        <div class="lending-row">
+          <label id="lbl-modal-shelf"></label>
+          <select id="lending-shelf"></select>
+        </div>
         <div class="lending-row">
           <label id="lbl-status"></label>
           <select id="lending-status"></select>
@@ -330,14 +331,15 @@ body { min-height: 100dvh; }
       all: 'すべて', ja: '和書', en: '洋書', other: '他',
       statusFilter: '状態', available: '在庫', lent: '貸出中',
       noBooks: '本が見つかりません', noCover: 'No Cover', loading: '読み込み中…',
+      loadFail: '読み込みに失敗しました',
       register: '本を登録', shelf: '棚', barcode: 'バーコード', manual: '手動入力',
       fetchInfo: '検索して登録', titleLabel: 'タイトル *', authorLabel: '著者',
       publisherLabel: '出版社', pubdateLabel: '出版年月', genreLabel: 'ジャンル',
       languageLabel: '言語', noteLabel: '備考', registerBtn: '登録',
-      lending: '貸出管理', status: '状態', borrower: '借りている人', update: '更新',
+      edit: '編集', status: '状態', borrower: '借りている人', update: '更新',
       updated: '更新しました', updateFail: '更新に失敗しました',
       isbn: 'ISBN', publisher: '出版社', pubdateDetail: '出版年月', genre: 'ジャンル',
-      language: '言語', shelfDetail: '棚', regDate: '登録日時', note: '備考',
+      language: '言語', regDate: '登録日時', note: '備考',
       registering: '登録中…', registered: '登録済', failed: '失敗', undo: '取消',
       queued: '待機中', retry: '再試行',
       errBadIsbn: 'ISBNが正しくありません', errNoHit: '書誌情報が見つかりませんでした',
@@ -355,14 +357,15 @@ body { min-height: 100dvh; }
       all: 'All', ja: 'JA', en: 'EN', other: 'Other',
       statusFilter: 'Status', available: 'Available', lent: 'Lent',
       noBooks: 'No books found', noCover: 'No Cover', loading: 'Loading…',
+      loadFail: 'Failed to load',
       register: 'Add Book', shelf: 'Shelf', barcode: 'Barcode', manual: 'Manual',
       fetchInfo: 'Lookup & Register', titleLabel: 'Title *', authorLabel: 'Author',
       publisherLabel: 'Publisher', pubdateLabel: 'Pub. date', genreLabel: 'Genre',
       languageLabel: 'Language', noteLabel: 'Notes', registerBtn: 'Register',
-      lending: 'Lending', status: 'Status', borrower: 'Borrower', update: 'Update',
+      edit: 'Edit', status: 'Status', borrower: 'Borrower', update: 'Update',
       updated: 'Updated', updateFail: 'Update failed',
       isbn: 'ISBN', publisher: 'Publisher', pubdateDetail: 'Pub. date', genre: 'Genre',
-      language: 'Language', shelfDetail: 'Shelf', regDate: 'Added', note: 'Notes',
+      language: 'Language', regDate: 'Added', note: 'Notes',
       registering: 'Registering…', registered: 'Done', failed: 'Failed', undo: 'Undo',
       queued: 'Queued', retry: 'Retry',
       errBadIsbn: 'Invalid ISBN', errNoHit: 'No book info found',
@@ -385,7 +388,7 @@ body { min-height: 100dvh; }
   const PAGE_SIZE = 24;
   let allBooks = [], filteredBooks = [], currentPage = 1;
   let sortKey = 'registeredAt', sortAsc = false;
-  let filterLang = 'all', filterStatus = 'all', filterShelf = 'all', filterGenre = 'all';
+  let filterLang = 'all', filterStatus = 'all', filterShelf = 'all';
   let searchQuery = '', searchScope = 'all';
   let shelves = [], selectedShelf = '';
   const jaCollator = (typeof Intl !== 'undefined' && Intl.Collator) ? new Intl.Collator('ja') : null;
@@ -413,19 +416,32 @@ body { min-height: 100dvh; }
   }
 
   function loadBooks(cb) {
-    if (isGAS) gasRun('getAllBooks').then((d) => { allBooks = d || []; cb(); });
+    if (isGAS) {
+      gasRun('getAllBooks').then((d) => { allBooks = d || []; cb(); }, () => {
+        // 失敗時は「読み込み中…」で固まらせず、エラー表示と再試行ボタンを出す
+        document.getElementById('book-grid').innerHTML =
+          `<div class="empty">${t('loadFail')}<br><button id="btn-reload" class="btn-small" style="margin-top:10px;">${t('retry')}</button></div>`;
+        document.getElementById('btn-reload').addEventListener('click', () => {
+          document.getElementById('book-grid').innerHTML = `<div class="empty">${t('loading')}</div>`;
+          loadBooks(cb);
+        });
+      });
+    }
     else { allBooks = (typeof MOCK_BOOKS !== 'undefined') ? MOCK_BOOKS : []; cb(); }
   }
   function loadShelves(cb) {
     if (isGAS) gasRun('getShelves').then((d) => { shelves = d || []; cb(); });
     else {
       shelves = [];
-      for (const l of ['A','B','C','D','E','F','G','H','P']) {
-        for (let i = 1; i <= 5; i++) shelves.push(`${l}-${i}`);
+      for (const l of ['A','B','C']) {
+        for (let i = 1; i <= 5; i++) shelves.push({ name: l, no: String(i) });
       }
+      shelves.push({ name: '歴史', no: '' }); // 番号なし棚の動作確認用
       cb();
     }
   }
+  // 棚ID: 番号があれば「分類-番号」、なければ分類そのもの
+  function shelfId(s) { return s.no ? `${s.name}-${s.no}` : s.name; }
   function registerByIsbn(isbn, shelf, cb) {
     if (isGAS) gasRun('registerBookByIsbn', isbn, shelf).then(cb, (e) => cb({ success: false, error: (e && e.message) || '' }));
     else {
@@ -485,11 +501,11 @@ body { min-height: 100dvh; }
     fsEl.innerHTML = `<option value="all">${t('all')}</option><option value="在庫">${t('available')}</option><option value="貸出中">${t('lent')}</option>`;
     fsEl.value = prevFS;
     document.getElementById('lbl-shelf-filter').textContent = t('shelf');
-    document.getElementById('lbl-genre-filter').textContent = t('genre');
     updateFilterOptions();
 
     // Modal
-    document.getElementById('lbl-lending').textContent = t('lending');
+    document.getElementById('lbl-lending').textContent = t('edit');
+    document.getElementById('lbl-modal-shelf').textContent = t('shelf');
     document.getElementById('lbl-status').textContent = t('status');
     document.getElementById('lbl-borrower').textContent = t('borrower');
     document.getElementById('lending-borrower').placeholder = t('borrower');
@@ -613,7 +629,6 @@ body { min-height: 100dvh; }
     document.getElementById('filter-lang').addEventListener('change', (e) => { filterLang = e.target.value; currentPage = 1; applyFilters(); });
     document.getElementById('filter-status').addEventListener('change', (e) => { filterStatus = e.target.value; currentPage = 1; applyFilters(); });
     document.getElementById('filter-shelf').addEventListener('change', (e) => { filterShelf = e.target.value; currentPage = 1; applyFilters(); });
-    document.getElementById('filter-genre').addEventListener('change', (e) => { filterGenre = e.target.value; currentPage = 1; applyFilters(); });
     document.getElementById('modal-bg').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
     document.getElementById('modal-close').addEventListener('click', closeModal);
     document.getElementById('btn-save-lending').addEventListener('click', saveLending);
@@ -633,7 +648,6 @@ body { min-height: 100dvh; }
       if (filterLang === 'other' && (b.language === 'ja' || b.language === 'en' || b.language === '')) return false;
       if (filterStatus !== 'all' && b.status !== filterStatus) return false;
       if (filterShelf !== 'all' && b.shelf !== filterShelf) return false;
-      if (filterGenre !== 'all' && splitGenres(b.genre).indexOf(filterGenre) === -1) return false;
       if (tokens.length) {
         let fields;
         if (searchScope === 'title') fields = [b.title];
@@ -681,8 +695,6 @@ body { min-height: 100dvh; }
     return isNaN(ts) ? 0 : ts;
   }
 
-  function splitGenres(g) { return String(g || '').split(/[,、]\s*/).filter(Boolean); }
-
   // NFKC正規化 + 小文字化 + カタカナ→ひらがな（かな違いでもヒットさせる）
   function norm(s) {
     if (!s) return '';
@@ -692,25 +704,18 @@ body { min-height: 100dvh; }
     return s.replace(/[ァ-ヶ]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60));
   }
 
-  // 棚・ジャンルフィルタの選択肢を allBooks から再構築（選択値は維持）
+  // 棚フィルタの選択肢を allBooks から再構築（選択値は維持）
   function updateFilterOptions() {
     const shelfSel = document.getElementById('filter-shelf');
-    const genreSel = document.getElementById('filter-genre');
-    const shelfOpts = [], genreOpts = [];
+    const shelfOpts = [];
     for (const b of allBooks) {
       if (b.shelf && shelfOpts.indexOf(b.shelf) === -1) shelfOpts.push(b.shelf);
-      for (const g of splitGenres(b.genre)) { if (genreOpts.indexOf(g) === -1) genreOpts.push(g); }
     }
     shelfOpts.sort();
-    genreOpts.sort((a, b) => jaCollator ? jaCollator.compare(a, b) : (a < b ? -1 : 1));
-    const rebuild = (sel, items, cur) => {
-      sel.innerHTML = `<option value="all">${t('all')}</option>`
-        + items.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
-      sel.value = items.indexOf(cur) !== -1 ? cur : 'all';
-      return sel.value;
-    };
-    filterShelf = rebuild(shelfSel, shelfOpts, filterShelf);
-    filterGenre = rebuild(genreSel, genreOpts, filterGenre);
+    shelfSel.innerHTML = `<option value="all">${t('all')}</option>`
+      + shelfOpts.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    shelfSel.value = shelfOpts.indexOf(filterShelf) !== -1 ? filterShelf : 'all';
+    filterShelf = shelfSel.value;
   }
 
   function renderList() {
@@ -782,11 +787,22 @@ body { min-height: 100dvh; }
     te.style.display = b.thumbnailUrl ? '' : 'none';
     const rows = [
       [t('isbn'), b.isbn], [t('publisher'), b.publisher], [t('pubdateDetail'), b.pubdate],
-      [t('genre'), b.genre], [t('language'), b.language], [t('shelfDetail'), b.shelf],
+      [t('genre'), b.genre], [t('language'), b.language],
       [t('regDate'), b.registeredAt]
     ];
     if (b.note) rows.push([t('note'), b.note]);
     document.getElementById('detail-table').innerHTML = rows.map((r) => `<tr><td>${r[0]}</td><td>${esc(r[1] || '—')}</td></tr>`).join('');
+    // 棚セレクト: Shelvesシートの棚一覧 + 現在値（一覧にない棚でも選択状態を保てるように）
+    const shelfSel = document.getElementById('lending-shelf');
+    const shelfOpts = [];
+    for (const s of shelves) {
+      const id = shelfId(s);
+      if (shelfOpts.indexOf(id) === -1) shelfOpts.push(id);
+    }
+    if (b.shelf && shelfOpts.indexOf(b.shelf) === -1) shelfOpts.unshift(b.shelf);
+    shelfSel.innerHTML = (b.shelf ? '' : '<option value="">—</option>')
+      + shelfOpts.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+    shelfSel.value = b.shelf || '';
     document.getElementById('lending-status').value = b.status || '在庫';
     document.getElementById('lending-borrower').value = b.borrower || '';
     toggleBorrowerRow();
@@ -799,21 +815,24 @@ body { min-height: 100dvh; }
   function saveLending() {
     if (!curBook) return;
     const book = curBook;
-    const prev = { status: book.status, borrower: book.borrower, updatedAt: book.updatedAt };
+    const prev = { status: book.status, borrower: book.borrower, shelf: book.shelf, updatedAt: book.updatedAt };
     const s = document.getElementById('lending-status').value;
     const borrower = document.getElementById('lending-borrower').value.trim();
+    const shelf = document.getElementById('lending-shelf').value;
     // 楽観更新して即閉じる。サーバー失敗時は巻き戻してトーストで通知
     book.status = s;
     book.borrower = s === '貸出中' ? borrower : '';
+    book.shelf = shelf;
     book.updatedAt = new Date().toLocaleString('ja-JP');
-    closeModal(); renderList();
+    // 棚変更は棚フィルタの選択肢にも影響するため再構築してから再描画
+    closeModal(); updateFilterOptions(); applyFilters();
     const rollback = (err) => {
-      book.status = prev.status; book.borrower = prev.borrower; book.updatedAt = prev.updatedAt;
-      renderList();
+      book.status = prev.status; book.borrower = prev.borrower; book.shelf = prev.shelf; book.updatedAt = prev.updatedAt;
+      updateFilterOptions(); applyFilters();
       toast(t('updateFail') + (err ? `: ${err}` : ''), 'error');
     };
     if (isGAS) {
-      gasRun('updateBookById', book.id, { status: s, borrower: book.borrower }).then((res) => {
+      gasRun('updateBookById', book.id, { status: s, borrower: book.borrower, shelf: shelf }).then((res) => {
         if (res && res.success) toast(t('updated'), 'ok');
         else rollback(res && res.error);
       }, (e) => rollback(e && e.message));
@@ -847,24 +866,39 @@ body { min-height: 100dvh; }
   }
 
   function renderShelves() {
-    const pf = [], nm = [];
+    // 分類ごとに実在する番号をシートの行順でまとめる（直積にしないので存在しない組み合わせは出ない）
+    const names = [], nosByName = {};
     for (const s of shelves) {
-      const p = s.split('-');
-      if (p.length !== 2) continue;
-      if (pf.indexOf(p[0]) === -1) pf.push(p[0]);
-      if (nm.indexOf(p[1]) === -1) nm.push(p[1]);
+      if (!nosByName[s.name]) { names.push(s.name); nosByName[s.name] = []; }
+      if (nosByName[s.name].indexOf(s.no) === -1) nosByName[s.name].push(s.no);
     }
-    pf.sort();
-    nm.sort((a, b) => parseInt(a) - parseInt(b));
+    if (!names.length) return;
+
     const pe = document.getElementById('shelf-prefix'), ne = document.getElementById('shelf-number');
-    pe.innerHTML = pf.map((p) => `<option>${p}</option>`).join('');
-    ne.innerHTML = nm.map((n) => `<option>${n}</option>`).join('');
+    const sep = document.querySelector('.shelf-sep');
+    pe.innerHTML = names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+
+    // 選択中の分類に応じて番号ドロップダウンを組み直す。番号なしの分類なら非表示
+    const renderNumbers = (name) => {
+      const nos = nosByName[name] || [];
+      const hasNo = nos.some((n) => n !== '');
+      ne.style.display = hasNo ? '' : 'none';
+      sep.style.display = hasNo ? '' : 'none';
+      ne.innerHTML = nos.map((n) => `<option value="${esc(n)}">${n === '' ? '—' : esc(n)}</option>`).join('');
+    };
     const upd = () => {
-      selectedShelf = `${pe.value}-${ne.value}`;
+      selectedShelf = (ne.style.display === 'none' || ne.value === '') ? pe.value : `${pe.value}-${ne.value}`;
       document.getElementById('shelf-display').textContent = selectedShelf;
     };
-    pe.onchange = upd; ne.onchange = upd;
-    if (pf.length && nm.length) { pe.value = pf[0]; ne.value = nm[0]; upd(); }
+    pe.onchange = () => { renderNumbers(pe.value); upd(); };
+    ne.onchange = upd;
+
+    // 前回選択した棚があれば復元する（一覧に戻って再度開いてもリセットしない）
+    const init = shelves.find((s) => shelfId(s) === selectedShelf) || shelves[0];
+    pe.value = init.name;
+    renderNumbers(init.name);
+    if (init.no) ne.value = init.no;
+    upd();
   }
 
   // Scanner — window.open + document.write (bypasses GAS iframe sandbox)
@@ -872,9 +906,11 @@ body { min-height: 100dvh; }
   // 登録中に次の本をスキャンしても消えない。
   const scanItems = []; // { isbn, title, author, status: 'queued'|'sending'|'ok'|'error', error } 新しい順
   let scanProcessing = false;
+  let scanWin = null; // 自分が開いたスキャナーポップアップ
 
   // Listen for barcode results from scanner popup
   window.addEventListener('message', (e) => {
+    if (!scanWin || e.source !== scanWin) return; // ポップアップ以外からのメッセージは無視
     if (!e.data || e.data.type !== 'barcode-scanned' || !e.data.value) return;
     const code = e.data.value;
 
@@ -1007,6 +1043,7 @@ body { min-height: 100dvh; }
 
     const win = window.open('', '_blank');
     if (win) {
+      scanWin = win;
       win.document.write(buildScannerHTML());
       win.document.close();
     } else {

@@ -24,6 +24,9 @@ const SHEET_LIBRARY = 'Library';
 const SHEET_MANUAL = 'Manual';
 const SHEET_SHELVES = 'Shelves';
 
+// updateBookById で書き換えを許可するカラム（id や登録日時の上書き防止）
+const EDITABLE_COLUMNS = ['shelf', 'status', 'borrower', 'note'];
+
 /**
  * スクリプトロックを取って fn を実行する（並列書き込み時の保険）
  */
@@ -38,32 +41,39 @@ function withScriptLock_(fn) {
 }
 
 /**
- * Shelvesシートから棚IDリストを取得する（Webアプリ用）
+ * Shelvesシートから棚リストを取得する（Webアプリ用）
  * @param {string} [token] - 認証トークン
- * @returns {string[]}
+ * @returns {{name: string, no: string}[]} シートの行順。no が空なら番号なしの棚
  */
 function getShelves(token) {
   requireAuth_(token);
   return getShelves_();
 }
 
+/**
+ * Shelves シートは「分類 | 番号」の2カラム。1行 = 1棚。
+ * 棚IDは番号があれば「分類-番号」、なければ分類そのもの。
+ * 旧1カラム形式（棚IDのみ）は番号が空になるため、棚ID全体が分類として扱われそのまま動く。
+ */
 function getShelves_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(SHEET_SHELVES);
   if (!sheet) {
     // 初回: Shelves シートを作成しサンプルデータを書き込む
     sheet = ss.insertSheet(SHEET_SHELVES);
-    sheet.getRange(1, 1).setValue('棚ID');
+    sheet.getRange(1, 1, 1, 2).setValues([['分類', '番号']]);
     sheet.setFrozenRows(1);
-    const samples = [['A-1'], ['A-2'], ['A-3'], ['B-1'], ['B-2'], ['B-3']];
-    sheet.getRange(2, 1, samples.length, 1).setValues(samples);
+    const samples = [['A', '1'], ['A', '2'], ['A', '3'], ['B', '1'], ['B', '2'], ['B', '3']];
+    sheet.getRange(2, 1, samples.length, 2).setValues(samples);
   }
 
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return [];
 
-  const data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
-  return data.map((row) => row[0]).filter((v) => v !== '');
+  const data = sheet.getRange(2, 1, lastRow - 1, 2).getDisplayValues();
+  return data
+    .map((row) => ({ name: String(row[0]).trim(), no: String(row[1]).trim() }))
+    .filter((s) => s.name !== '');
 }
 
 // ============================================================
@@ -165,6 +175,7 @@ function getBooksBySheet_(sheetName) {
   if (lastRow <= 1) return []; // ヘッダーのみ
 
   const data = sheet.getRange(2, 1, lastRow - 1, COLUMNS.length).getDisplayValues();
+  const idCol = COLUMNS.indexOf('id') + 1;
   return data.map((rowValues, idx) => {
     const obj = {};
     for (let i = 0; i < COLUMNS.length; i++) {
@@ -174,9 +185,11 @@ function getBooksBySheet_(sheetName) {
     if (obj.isbn && obj.isbn.charAt(0) === "'") {
       obj.isbn = obj.isbn.substring(1);
     }
-    // ID が空の場合はフォールバック（シート名+行番号で一意性を確保）
+    // ID が空の行（シートに直接追加された行など）は UUID を発行してシートに書き戻す。
+    // 書き戻さないと updateBookById が行を特定できず更新が必ず失敗する
     if (!obj.id) {
-      obj.id = `${sheetName}-row-${idx + 2}`;
+      obj.id = Utilities.getUuid();
+      sheet.getRange(idx + 2, idCol).setValue(obj.id);
     }
     return obj;
   });
@@ -230,6 +243,7 @@ function updateBookById_(bookId, updates) {
 
         // updatesの各フィールドを書き込み
         for (const key of Object.keys(updates)) {
+          if (EDITABLE_COLUMNS.indexOf(key) === -1) continue;
           const colIdx = COLUMNS.indexOf(key);
           if (colIdx === -1) continue;
           sheet.getRange(rowNum, colIdx + 1).setValue(updates[key]);
@@ -265,21 +279,23 @@ function refreshSelectedRows() {
     return;
   }
 
-  const selection = sheet.getActiveRange();
-  let startRow = selection.getRow();
-  let numRows = selection.getNumRows();
-
-  // ヘッダー行は対象外
-  if (startRow < 2) {
-    startRow = 2;
-    numRows = numRows - 1;
+  // 不連続選択 (Ctrl/Cmd+クリック) に対応するため全選択範囲から行番号を集める
+  const rangeList = SpreadsheetApp.getActiveRangeList();
+  const ranges = rangeList ? rangeList.getRanges() : [sheet.getActiveRange()];
+  const rowSet = new Set();
+  for (const range of ranges) {
+    const start = range.getRow();
+    for (let r = start; r < start + range.getNumRows(); r++) {
+      if (r >= 2) rowSet.add(r); // ヘッダー行は対象外
+    }
   }
+  const rows = [...rowSet].sort((a, b) => a - b);
 
   const isbnCol = COLUMNS.indexOf('isbn') + 1;
   let refreshCount = 0;
   const errors = [];
 
-  for (let r = startRow; r < startRow + numRows; r++) {
+  for (const r of rows) {
     const isbn = sheet.getRange(r, isbnCol).getDisplayValue().replace(/^'/, '');
     if (!isbn) {
       errors.push(`行 ${r}: ISBNが空です`);
@@ -324,7 +340,7 @@ function refreshSelectedRows() {
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('蔵書管理')
-    .addItem('シートを初期化', 'ensureAllSheets')
+    .addItem('初期設定（不足シートを作成）', 'ensureAllSheets')
     .addItem('選択行の情報を再取得', 'refreshSelectedRows')
     .addItem('UUIDを補完', 'backfillUuids')
     .addToUi();
